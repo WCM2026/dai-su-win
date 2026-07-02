@@ -3,6 +3,10 @@
 const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbz-489WtsNWSWfgGsb6muXqlzjmDSc2XD4pnCdSgau7b2N3RMEolnIgeSA1uPL_wU83/exec';
 // CẬP NHẬT URL này thành URL Google Sheet backend (mở trực tiếp để sửa hàng loạt Users / DanhMucKhoiPhong / Quarters)
 const SPREADSHEET_URL = 'https://docs.google.com/spreadsheets/d/1RZ0-hSwBtnyt2O84xb1p8u8qcvXVLW2B-9k1fApJGZU/edit';
+// Logo WinCommerce dùng chung cho tất cả các trang
+const LOGO_URL = 'https://datax-talent.basecdn.net/winmart/logo.png';
+// Domain email công ty được điền sẵn để người dùng chỉ cần gõ phần tên trước @
+const EMAIL_DOMAIN = '@winmart.masangroup.com';
 
 // ---- JSONP: dùng cho các lệnh ĐỌC dữ liệu (không bị giới hạn CORS vì là <script> tag) ----
 let _jsonpCounter = 0;
@@ -112,6 +116,9 @@ const Api = {
   getDeptList: (loaiDonVi) => jsonp('deptList', { loaiDonVi }),
   getDeptStats: (token, quy) => jsonp('deptStats', { token, quy: quy || 'all' }),
 
+  // Tra cứu nhân sự theo MSNV (sheet DSNS)
+  lookupEmployee: (maNV) => jsonp('lookupEmployee', { maNV }),
+
   // Export
   exportCsvUrl: (token, quy) => `${WEBAPP_URL}?action=exportCsv&token=${token}&quy=${quy || 'all'}`,
 
@@ -119,6 +126,20 @@ const Api = {
   submitNomination: (fields) => postForm(fields),
   compressImage
 };
+
+// Điền sẵn domain email công ty (@winmart.masangroup.com) vào 1 ô input email,
+// đặt con trỏ ngay trước dấu @ để người dùng chỉ cần gõ phần tên đăng nhập.
+function prefillEmailDomain(input) {
+  if (!input) return;
+  if (!input.value) input.value = EMAIL_DOMAIN;
+  const placeCursor = () => {
+    const at = input.value.indexOf('@');
+    const pos = at === -1 ? 0 : at;
+    input.setSelectionRange(pos, pos);
+  };
+  input.addEventListener('focus', placeCursor);
+  setTimeout(placeCursor, 0);
+}
 
 // ---- Session helpers ----
 const Session = {

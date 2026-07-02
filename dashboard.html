@@ -111,12 +111,14 @@
   .decide-msg { margin-top:12px; padding:10px 12px; border-radius:8px; font-size:13px; display:none; }
   .decide-msg.ok { background:#e6f4ea; color:#1e7e34; display:block; }
   .decide-msg.err { background:#fdeceb; color:#b0271e; display:block; }
+  .logo-badge { background:#fff; border-radius:8px; padding:5px 12px; display:inline-flex; align-items:center; }
+  .logo-badge img { height:18px; display:block; }
 </style>
 </head>
 <body>
 
 <div class="topbar">
-  <div class="brand"><div class="eyebrow">WinCommerce</div><b>Dashboard Đại sứ WIN</b></div>
+  <div class="brand" style="display:flex;align-items:center;gap:12px;"><span class="logo-badge"><img src="https://datax-talent.basecdn.net/winmart/logo.png" alt="WinCommerce"></span><b>Dashboard Đại sứ WIN</b></div>
   <div class="controls">
     <span class="who" id="whoami">...</span>
     <select id="quarterSelect"></select>

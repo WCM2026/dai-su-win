@@ -45,12 +45,14 @@
   .num { font-weight:700; }
   .loading { text-align:center; padding:24px; color:var(--muted); }
   .quarter-select { padding:8px 12px; border:1px solid #dde1ea; border-radius:8px; font-size:13px; margin-bottom:14px; }
+  .logo-badge { background:#fff; border-radius:8px; padding:5px 12px; display:inline-flex; align-items:center; }
+  .logo-badge img { height:18px; display:block; }
 </style>
 </head>
 <body>
 
 <div class="topbar">
-  <div class="brand"><div class="eyebrow">WinCommerce</div><b>⚙️ Admin panel — Đại sứ WIN</b></div>
+  <div class="brand" style="display:flex;align-items:center;gap:12px;"><span class="logo-badge"><img src="https://datax-talent.basecdn.net/winmart/logo.png" alt="WinCommerce"></span><b>⚙️ Admin panel — Đại sứ WIN</b></div>
   <div class="controls">
     <span class="who" id="whoami">...</span>
     <a href="dashboard.html" class="navbtn">← Về Dashboard</a>
@@ -111,7 +113,7 @@
         <div class="list-wrap" id="userList"><div class="loading">Đang tải...</div></div>
         <div class="add-row">
           <input id="newUserName" placeholder="Họ và tên" style="min-width:160px;">
-          <input id="newUserEmail" placeholder="Email" style="min-width:200px;">
+          <input id="newUserEmail" placeholder="ten@winmart.masangroup.com" style="min-width:220px;">
           <select id="newUserRole"><option value="hrbp">HRBP</option><option value="admin">Admin</option></select>
           <input id="newUserScope" placeholder="Phạm vi phụ trách (VD: SSC)" style="min-width:200px;">
           <button class="btn secondary" id="addUserBtn">+ Thêm người dùng</button>
@@ -155,6 +157,7 @@ document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
   t.classList.add('active');
   document.getElementById('tab-' + t.dataset.tab).classList.add('active');
   if (t.dataset.tab === 'deptstats') loadDeptStats();
+  if (t.dataset.tab === 'users') loadUsers();
 });
 
 let ALL_QUARTERS = [];
@@ -251,7 +254,9 @@ async function init() {
   document.getElementById('sheetLinkQuarters').href = SPREADSHEET_URL;
   document.getElementById('sheetLinkUsers').href = SPREADSHEET_URL;
   document.getElementById('sheetLinkDepts').href = SPREADSHEET_URL;
+  prefillEmailDomain(document.getElementById('newUserEmail'));
   await loadQuarters();
+  await loadUsers(); // Trước đây danh sách người dùng không load vì hàm này chưa từng được gọi
 }
 </script>
 </body>

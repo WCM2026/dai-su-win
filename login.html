@@ -21,18 +21,20 @@
   .step { display:none; }
   .step.active { display:block; }
   .link { text-align:center; font-size:12px; color:var(--muted); margin-top:8px; cursor:pointer; text-decoration:underline; }
+  .logo-badge { display:flex; justify-content:center; margin-bottom:14px; }
+  .logo-badge img { height:22px; display:block; }
 </style>
 </head>
 <body>
 <div class="card">
-  <div class="eyebrow">WinCommerce</div>
+  <div class="logo-badge"><img src="https://datax-talent.basecdn.net/winmart/logo.png" alt="WinCommerce"></div>
   <h1>Đăng nhập Dashboard Đại sứ WIN</h1>
   <div id="msg" class="msg"></div>
 
   <!-- Bước 1: nhập email -> chọn OTP (lần đầu) hoặc mật khẩu (đã có) -->
   <div class="step active" id="stepEmail">
     <label>Email công ty</label>
-    <input type="text" id="email" placeholder="ten@wincommerce.vn">
+    <input type="text" id="email" placeholder="ten@winmart.masangroup.com">
     <button id="btnPassword">Đăng nhập bằng mật khẩu</button>
     <div class="link" id="linkOtp">Chưa có mật khẩu? Nhận mã OTP qua email</div>
   </div>
@@ -67,6 +69,8 @@ function showStep(id) {
   document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
 }
+
+prefillEmailDomain(document.getElementById('email'));
 
 document.getElementById('btnPassword').onclick = () => showStep('stepPassword');
 document.getElementById('linkBack1').onclick = () => showStep('stepEmail');

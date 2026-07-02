@@ -34,6 +34,19 @@
   .quarter-info { padding:12px 14px; border-radius:8px; font-size:14px; font-weight:600; }
   .quarter-info.open { background:#e6f4ea; color:#1e7e34; }
   .quarter-info.closed { background:#fdeceb; color:#b0271e; }
+  .quarter-deadline { font-size:12.5px; font-weight:400; margin-top:6px; color:#1e7e34; }
+  .logo-badge { display:inline-flex; align-items:center; background:#fff; border-radius:8px; padding:5px 12px; margin-bottom:8px; }
+  .logo-badge img { height:20px; display:block; }
+  .candidate-block { border:1.5px solid #eef0f6; border-radius:12px; padding:18px 20px; margin-bottom:16px; position:relative; }
+  .candidate-block-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  .candidate-block-head h3 { margin:0; font-size:14px; color:var(--navy); }
+  .candidate-remove { background:none; border:none; color:var(--red); font-weight:700; cursor:pointer; font-size:13px; }
+  .lookup-note { font-size:12px; margin-top:-4px; margin-bottom:8px; display:none; }
+  .lookup-note.ok { color:#1e7e34; display:block; }
+  .lookup-note.err { color:#b0271e; display:block; }
+  .add-candidate-btn { background:#fff; color:var(--navy); border:1.5px dashed var(--navy); padding:12px; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; width:100%; margin-bottom:16px; }
+  .add-candidate-btn:disabled { opacity:.5; cursor:not-allowed; }
+  .candidates-hint { font-size:12px; color:var(--muted); margin:-4px 0 14px; }
 
   /* Modal xác nhận trước khi gửi */
   .modal-overlay { position:fixed; inset:0; background:rgba(15,29,71,.55); display:flex; align-items:center; justify-content:center; padding:20px; z-index:100; }
@@ -52,12 +65,14 @@
   .review-actions { display:flex; gap:10px; margin-top:10px; }
   .review-actions button { flex:1; }
   .btn-ghost { background:#fff !important; color:var(--navy) !important; border:1px solid var(--navy) !important; }
+  .review-candidate { border-top:2px solid #eef0f6; margin-top:18px; padding-top:16px; }
+  .review-candidate h4.rc-title { color:var(--navy); font-size:13px; text-transform:uppercase; letter-spacing:.05em; margin:0 0 10px; }
 </style>
 </head>
 <body>
 <div class="wrap">
   <div class="header">
-    <div class="eyebrow">WinCommerce</div>
+    <div class="logo-badge"><img src="https://datax-talent.basecdn.net/winmart/logo.png" alt="WinCommerce"></div>
     <h1>Đề cử Đại sứ WIN</h1>
   </div>
 
@@ -94,36 +109,10 @@
     </div>
 
     <div class="card">
-      <h2>2. Thông tin ứng viên</h2>
-      <div class="row">
-        <div><label>Họ và tên</label><input type="text" id="hoTenUngVien" required></div>
-        <div><label>Mã số nhân viên</label><input type="text" id="maNV" required></div>
-      </div>
-      <div class="row">
-        <div><label>Chức danh</label><input type="text" id="chucDanh" required></div>
-        <div><label>Ngày vào Tập đoàn</label><input type="date" id="ngayVaoTapDoan" required></div>
-      </div>
-      <label>Ảnh chân dung</label>
-      <div class="hint">Yêu cầu ảnh rõ nét, tươi vui, nhìn rõ mặt. Ảnh sẽ được tự động nén xuống dưới ~2-4MB (giữ đủ nét để in poster/bảng tin), giữ nguyên tỉ lệ.</div>
-      <input type="file" id="anhChanDung" accept="image/*">
-      <img id="preview" class="file-preview">
-      <div id="compressNote" class="compress-note"></div>
-    </div>
-
-    <div class="card">
-      <h2>3. Câu chuyện Đại sứ</h2>
-      <label>Bối cảnh</label><textarea id="boiCanh" required></textarea>
-      <label>Hành động / đóng góp</label><textarea id="hanhDong" required></textarea>
-      <label>Kết quả nhận được</label><textarea id="ketQua" required></textarea>
-    </div>
-
-    <div class="card core-values">
-      <h2>4. Giá trị cốt lõi tương ứng</h2>
-      <label class="cv"><input type="checkbox" name="gtcl" value="WIN PHỤNG SỰ"> WIN PHỤNG SỰ — Kiên định với hành trình phụng sự người tiêu dùng</label>
-      <label class="cv"><input type="checkbox" name="gtcl" value="WIN SÁNG TẠO"> WIN SÁNG TẠO — Kiên định tạo ra giá trị chuyển đổi</label>
-      <label class="cv"><input type="checkbox" name="gtcl" value="WIN TỰ CHỦ"> WIN TỰ CHỦ — Kiên định với tinh thần doanh nhân</label>
-      <label class="cv"><input type="checkbox" name="gtcl" value="WIN KIÊN ĐỊNH"> WIN KIÊN ĐỊNH — Kiên định với tầm nhìn dài hạn</label>
-      <label class="cv"><input type="checkbox" name="gtcl" value="WIN KHÁT VỌNG"> WIN KHÁT VỌNG — Kiên định với mục tiêu lý tưởng</label>
+      <h2>2-4. Ứng viên đề cử</h2>
+      <div class="candidates-hint">Có thể đề cử tối đa 3 ứng viên trong 1 lượt gửi — mỗi ứng viên sẽ được HRBP xem xét độc lập. Nhập Mã số nhân viên trước để hệ thống tự động tra cứu Họ tên / Chức danh / Ngày vào Tập đoàn.</div>
+      <div id="candidatesContainer"></div>
+      <button type="button" class="add-candidate-btn" id="addCandidateBtn">+ Thêm ứng viên (tối đa 3)</button>
     </div>
 
     <button type="submit" id="submitBtn">Xem lại & Gửi đề cử</button>
@@ -139,23 +128,15 @@
       <h3>Kiểm tra lại trước khi gửi đề cử</h3>
     </div>
     <div class="modal-body">
-      <img id="rPhoto" class="review-photo" style="display:none;">
       <div class="review-grid">
         <dl>
           <dt>Quý đăng ký</dt><dd id="rQuy">—</dd>
           <dt>Đơn vị</dt><dd id="rDonVi">—</dd>
           <dt>Người đề xuất</dt><dd id="rNguoiDeXuat">—</dd>
           <dt>Email người đề xuất</dt><dd id="rEmail">—</dd>
-          <dt>Ứng viên</dt><dd id="rUngVien">—</dd>
-          <dt>Mã số NV</dt><dd id="rMaNV">—</dd>
-          <dt>Chức danh</dt><dd id="rChucDanh">—</dd>
-          <dt>Ngày vào Tập đoàn</dt><dd id="rNgayVao">—</dd>
-          <dt>Giá trị cốt lõi</dt><dd id="rGtcl">—</dd>
         </dl>
       </div>
-      <div class="review-section"><h4>Bối cảnh</h4><p id="rBoiCanh">—</p></div>
-      <div class="review-section"><h4>Hành động / đóng góp</h4><p id="rHanhDong">—</p></div>
-      <div class="review-section"><h4>Kết quả nhận được</h4><p id="rKetQua">—</p></div>
+      <div id="rCandidates"></div>
 
       <div class="review-actions">
         <button class="btn-ghost" id="btnBackEdit">← Quay lại chỉnh sửa</button>
@@ -168,9 +149,13 @@
 
 <script src="api.js"></script>
 <script>
-let imageBase64 = null;
-
 let activeQuarter = null; // { MaQuy, TenQuy, ... }
+const MAX_CANDIDATES = 3;
+let candidateCount = 0;
+
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+}
 
 // Tự động lấy Quý đang mở (do Admin kích hoạt) — không cho người nộp tự chọn
 Api.getActiveQuarter().then(res => {
@@ -179,7 +164,8 @@ Api.getActiveQuarter().then(res => {
   if (res.success && res.item) {
     activeQuarter = res.item;
     el.className = 'quarter-info open';
-    el.textContent = `🟢 Đang nhận đề cử cho: ${res.item.TenQuy}`;
+    const hanNop = res.item.HanB1_DonViDeCu ? new Date(res.item.HanB1_DonViDeCu).toLocaleDateString('vi-VN') : null;
+    el.innerHTML = `🟢 Đang nhận đề cử cho: ${esc(res.item.TenQuy)}` + (hanNop ? `<div class="quarter-deadline">⏰ Hạn gửi đề cử: <b>${hanNop}</b></div>` : '');
   } else {
     el.className = 'quarter-info closed';
     el.textContent = '🔴 Hiện không có Quý nào đang mở đăng ký. Vui lòng liên hệ PTVH/Admin.';
@@ -199,63 +185,182 @@ document.getElementById('loaiDonVi').addEventListener('change', async function(e
     : '<option value="">Chưa có danh mục cho loại đơn vị này</option>';
 });
 
-document.getElementById('anhChanDung').addEventListener('change', async function(e) {
+prefillEmailDomain(document.getElementById('emailNguoiDeXuat'));
+
+// ---------- Khối ứng viên (lặp lại, tối đa 3) ----------
+function candidateBlockHtml() {
+  return `
+  <div class="candidate-block">
+    <div class="candidate-block-head">
+      <h3>Ứng viên</h3>
+      <button type="button" class="candidate-remove" data-action="remove">✕ Xóa ứng viên này</button>
+    </div>
+    <div class="row">
+      <div>
+        <label>Mã số nhân viên</label>
+        <input type="text" data-field="maNV" placeholder="Nhập MSNV để tự động tra cứu" required>
+        <div class="lookup-note" data-field="lookupNote"></div>
+      </div>
+      <div><label>Họ và tên</label><input type="text" data-field="hoTenUngVien" required></div>
+    </div>
+    <div class="row">
+      <div><label>Chức danh</label><input type="text" data-field="chucDanh" required></div>
+      <div><label>Ngày vào Tập đoàn</label><input type="date" data-field="ngayVaoTapDoan" required></div>
+    </div>
+    <label>Ảnh chân dung</label>
+    <div class="hint">Yêu cầu ảnh rõ nét, tươi vui, nhìn rõ mặt. Ảnh sẽ được tự động nén xuống dưới ~2-4MB (giữ đủ nét để in poster/bảng tin), giữ nguyên tỉ lệ.</div>
+    <input type="file" data-field="anhChanDung" accept="image/*">
+    <img class="file-preview" data-field="preview">
+    <div class="compress-note" data-field="compressNote"></div>
+
+    <label style="margin-top:14px;">Bối cảnh</label><textarea data-field="boiCanh" required></textarea>
+    <label>Hành động / đóng góp</label><textarea data-field="hanhDong" required></textarea>
+    <label>Kết quả nhận được</label><textarea data-field="ketQua" required></textarea>
+
+    <label>Giá trị cốt lõi tương ứng</label>
+    <div class="core-values">
+      <label class="cv"><input type="checkbox" data-field="gtcl" value="WIN PHỤNG SỰ"> WIN PHỤNG SỰ — Kiên định với hành trình phụng sự người tiêu dùng</label>
+      <label class="cv"><input type="checkbox" data-field="gtcl" value="WIN SÁNG TẠO"> WIN SÁNG TẠO — Kiên định tạo ra giá trị chuyển đổi</label>
+      <label class="cv"><input type="checkbox" data-field="gtcl" value="WIN TỰ CHỦ"> WIN TỰ CHỦ — Kiên định với tinh thần doanh nhân</label>
+      <label class="cv"><input type="checkbox" data-field="gtcl" value="WIN KIÊN ĐỊNH"> WIN KIÊN ĐỊNH — Kiên định với tầm nhìn dài hạn</label>
+      <label class="cv"><input type="checkbox" data-field="gtcl" value="WIN KHÁT VỌNG"> WIN KHÁT VỌNG — Kiên định với mục tiêu lý tưởng</label>
+    </div>
+  </div>`;
+}
+
+function refreshCandidateUI() {
+  const blocks = document.querySelectorAll('.candidate-block');
+  blocks.forEach((block, i) => {
+    block.querySelector('h3').textContent = `Ứng viên ${i + 1}`;
+    block.querySelector('[data-action="remove"]').style.display = blocks.length > 1 ? '' : 'none';
+  });
+  const addBtn = document.getElementById('addCandidateBtn');
+  addBtn.disabled = candidateCount >= MAX_CANDIDATES;
+  addBtn.textContent = candidateCount >= MAX_CANDIDATES ? 'Đã đạt tối đa 3 ứng viên trong 1 lượt gửi' : '+ Thêm ứng viên (tối đa 3)';
+}
+
+function addCandidate() {
+  if (candidateCount >= MAX_CANDIDATES) return;
+  document.getElementById('candidatesContainer').insertAdjacentHTML('beforeend', candidateBlockHtml());
+  candidateCount++;
+  refreshCandidateUI();
+}
+
+document.getElementById('addCandidateBtn').onclick = addCandidate;
+addCandidate(); // bắt đầu với 1 ứng viên
+
+const candidatesContainer = document.getElementById('candidatesContainer');
+
+candidatesContainer.addEventListener('click', (e) => {
+  if (e.target.dataset.action === 'remove') {
+    e.target.closest('.candidate-block').remove();
+    candidateCount--;
+    refreshCandidateUI();
+  }
+});
+
+// Tra cứu MSNV -> tự động điền Họ tên / Chức danh / Ngày vào Tập đoàn (sheet DSNS)
+candidatesContainer.addEventListener('blur', async (e) => {
+  if (e.target.dataset.field !== 'maNV') return;
+  const block = e.target.closest('.candidate-block');
+  const note = block.querySelector('[data-field="lookupNote"]');
+  const maNV = e.target.value.trim();
+  if (!maNV) { note.className = 'lookup-note'; note.style.display = 'none'; return; }
+  note.className = 'lookup-note';
+  note.style.display = 'block';
+  note.textContent = 'Đang tra cứu MSNV...';
+  try {
+    const res = await Api.lookupEmployee(maNV);
+    if (res.success) {
+      block.querySelector('[data-field="hoTenUngVien"]').value = res.item.hoTen || '';
+      block.querySelector('[data-field="chucDanh"]').value = res.item.chucDanh || '';
+      if (res.item.ngayVaoTapDoan) block.querySelector('[data-field="ngayVaoTapDoan"]').value = res.item.ngayVaoTapDoan;
+      note.className = 'lookup-note ok';
+      note.textContent = `✓ Đã tìm thấy: ${res.item.hoTen || '(chưa có tên)'}. Vui lòng kiểm tra lại thông tin.`;
+    } else {
+      note.className = 'lookup-note err';
+      note.textContent = `${res.message} Vui lòng nhập tay thông tin ứng viên.`;
+    }
+  } catch (err) {
+    note.className = 'lookup-note err';
+    note.textContent = 'Không tra cứu được lúc này, vui lòng nhập tay thông tin ứng viên.';
+  }
+}, true); // dùng capture vì sự kiện blur không nổi bọt (bubble)
+
+// Nén ảnh cho từng khối ứng viên
+candidatesContainer.addEventListener('change', async (e) => {
+  if (e.target.dataset.field !== 'anhChanDung') return;
+  const block = e.target.closest('.candidate-block');
   const file = e.target.files[0];
   if (!file) return;
-  const note = document.getElementById('compressNote');
+  const note = block.querySelector('[data-field="compressNote"]');
   note.style.display = 'block';
   note.textContent = 'Đang nén ảnh...';
-  imageBase64 = await Api.compressImage(file);
-  const preview = document.getElementById('preview');
-  preview.src = imageBase64;
+  const b64 = await Api.compressImage(file);
+  block._imageBase64 = b64;
+  const preview = block.querySelector('[data-field="preview"]');
+  preview.src = b64;
   preview.style.display = 'block';
-  const sizeKB = Math.round((imageBase64.length * 0.75) / 1024);
+  const sizeKB = Math.round((b64.length * 0.75) / 1024);
   note.textContent = `✓ Đã nén ảnh xuống còn ~${sizeKB}KB`;
 });
 
-function collectFields() {
-  const giaTriCotLoi = Array.from(document.querySelectorAll('input[name=gtcl]:checked')).map(el => el.value).join(', ');
+// ---------- Thu thập dữ liệu ----------
+function collectSharedFields() {
   return {
     quy: activeQuarter ? activeQuarter.MaQuy : '',
     loaiDonVi: document.getElementById('loaiDonVi').value,
     mienVungKhoi: document.getElementById('mienVungKhoi').value,
     tenDonVi: document.getElementById('tenDonVi').value,
     nguoiDeXuat: document.getElementById('nguoiDeXuat').value,
-    emailNguoiDeXuat: document.getElementById('emailNguoiDeXuat').value,
-    hoTenUngVien: document.getElementById('hoTenUngVien').value,
-    maNV: document.getElementById('maNV').value,
-    chucDanh: document.getElementById('chucDanh').value,
-    ngayVaoTapDoan: document.getElementById('ngayVaoTapDoan').value,
-    imageBase64: imageBase64 || '',
-    cauChuyen: JSON.stringify({
-      boiCanh: document.getElementById('boiCanh').value,
-      hanhDong: document.getElementById('hanhDong').value,
-      ketQua: document.getElementById('ketQua').value
-    }),
-    giaTriCotLoi
+    emailNguoiDeXuat: document.getElementById('emailNguoiDeXuat').value
   };
 }
 
-function openReview(fields) {
+function collectCandidates() {
+  return Array.from(document.querySelectorAll('.candidate-block')).map(block => ({
+    hoTenUngVien: block.querySelector('[data-field="hoTenUngVien"]').value,
+    maNV: block.querySelector('[data-field="maNV"]').value,
+    chucDanh: block.querySelector('[data-field="chucDanh"]').value,
+    ngayVaoTapDoan: block.querySelector('[data-field="ngayVaoTapDoan"]').value,
+    imageBase64: block._imageBase64 || '',
+    cauChuyen: JSON.stringify({
+      boiCanh: block.querySelector('[data-field="boiCanh"]').value,
+      hanhDong: block.querySelector('[data-field="hanhDong"]').value,
+      ketQua: block.querySelector('[data-field="ketQua"]').value
+    }),
+    giaTriCotLoi: Array.from(block.querySelectorAll('[data-field="gtcl"]:checked')).map(el => el.value).join(', ')
+  }));
+}
+
+function openReview(shared, candidates) {
   document.getElementById('rQuy').textContent = activeQuarter ? activeQuarter.TenQuy : '—';
-  document.getElementById('rDonVi').textContent = `${fields.tenDonVi} (${fields.loaiDonVi} · ${fields.mienVungKhoi})`;
-  document.getElementById('rNguoiDeXuat').textContent = fields.nguoiDeXuat;
-  document.getElementById('rEmail').textContent = fields.emailNguoiDeXuat;
-  document.getElementById('rUngVien').textContent = fields.hoTenUngVien;
-  document.getElementById('rMaNV').textContent = fields.maNV;
-  document.getElementById('rChucDanh').textContent = fields.chucDanh;
-  document.getElementById('rNgayVao').textContent = fields.ngayVaoTapDoan ? new Date(fields.ngayVaoTapDoan).toLocaleDateString('vi-VN') : '—';
-  document.getElementById('rGtcl').textContent = fields.giaTriCotLoi || '(chưa chọn)';
-  const story = JSON.parse(fields.cauChuyen);
-  document.getElementById('rBoiCanh').textContent = story.boiCanh || '—';
-  document.getElementById('rHanhDong').textContent = story.hanhDong || '—';
-  document.getElementById('rKetQua').textContent = story.ketQua || '—';
-  const photo = document.getElementById('rPhoto');
-  if (fields.imageBase64) { photo.src = fields.imageBase64; photo.style.display = 'block'; } else { photo.style.display = 'none'; }
+  document.getElementById('rDonVi').textContent = `${shared.tenDonVi} (${shared.loaiDonVi} · ${shared.mienVungKhoi})`;
+  document.getElementById('rNguoiDeXuat').textContent = shared.nguoiDeXuat;
+  document.getElementById('rEmail').textContent = shared.emailNguoiDeXuat;
+
+  document.getElementById('rCandidates').innerHTML = candidates.map((c, i) => {
+    const story = JSON.parse(c.cauChuyen);
+    return `<div class="review-candidate">
+      <h4 class="rc-title">Ứng viên ${i + 1}</h4>
+      ${c.imageBase64 ? `<img src="${c.imageBase64}" class="review-photo">` : ''}
+      <div class="review-grid"><dl>
+        <dt>Ứng viên</dt><dd>${esc(c.hoTenUngVien) || '—'}</dd>
+        <dt>Mã số NV</dt><dd>${esc(c.maNV) || '—'}</dd>
+        <dt>Chức danh</dt><dd>${esc(c.chucDanh) || '—'}</dd>
+        <dt>Ngày vào Tập đoàn</dt><dd>${c.ngayVaoTapDoan ? new Date(c.ngayVaoTapDoan).toLocaleDateString('vi-VN') : '—'}</dd>
+        <dt>Giá trị cốt lõi</dt><dd>${esc(c.giaTriCotLoi) || '(chưa chọn)'}</dd>
+      </dl></div>
+      <div class="review-section"><h4>Bối cảnh</h4><p>${esc(story.boiCanh) || '—'}</p></div>
+      <div class="review-section"><h4>Hành động / đóng góp</h4><p>${esc(story.hanhDong) || '—'}</p></div>
+      <div class="review-section"><h4>Kết quả nhận được</h4><p>${esc(story.ketQua) || '—'}</p></div>
+    </div>`;
+  }).join('');
+
   document.getElementById('reviewStatus').className = '';
   document.getElementById('reviewStatus').textContent = '';
   document.getElementById('btnConfirmSubmit').disabled = false;
-  document.getElementById('btnConfirmSubmit').textContent = '✅ Xác nhận gửi đề cử';
+  document.getElementById('btnConfirmSubmit').textContent = candidates.length > 1 ? `✅ Xác nhận gửi ${candidates.length} đề cử` : '✅ Xác nhận gửi đề cử';
   document.getElementById('btnConfirmSubmit').style.display = '';
   document.getElementById('btnBackEdit').textContent = '← Quay lại chỉnh sửa';
   document.getElementById('reviewOverlay').classList.remove('hidden');
@@ -264,7 +369,9 @@ function openReview(fields) {
 document.getElementById('nominationForm').addEventListener('submit', function(e) {
   e.preventDefault();
   if (!activeQuarter) { alert('Hiện không có Quý nào đang mở đăng ký.'); return; }
-  openReview(collectFields());
+  const candidates = collectCandidates();
+  if (!candidates.length) { alert('Vui lòng thêm ít nhất 1 ứng viên.'); return; }
+  openReview(collectSharedFields(), candidates);
 });
 
 document.getElementById('btnBackEdit').onclick = () => document.getElementById('reviewOverlay').classList.add('hidden');
@@ -273,27 +380,42 @@ document.getElementById('btnConfirmSubmit').onclick = async () => {
   const btn = document.getElementById('btnConfirmSubmit');
   const reviewStatus = document.getElementById('reviewStatus');
   btn.disabled = true;
-  btn.textContent = 'Đang gửi...';
-  try {
-    const res = await Api.submitNomination(collectFields());
-    reviewStatus.className = res.success ? 'ok' : 'err';
-    reviewStatus.textContent = res.message;
-    if (res.success) {
-      btn.style.display = 'none';
-      document.getElementById('btnBackEdit').textContent = 'Đóng';
-      document.getElementById('nominationForm').reset();
-      document.getElementById('preview').style.display = 'none';
-      document.getElementById('compressNote').style.display = 'none';
-      imageBase64 = null;
-    } else {
-      btn.disabled = false;
-      btn.textContent = '✅ Xác nhận gửi đề cử';
+
+  const shared = collectSharedFields();
+  const candidates = collectCandidates();
+  let successCount = 0;
+  const errors = [];
+
+  for (let i = 0; i < candidates.length; i++) {
+    btn.textContent = candidates.length > 1 ? `Đang gửi ứng viên ${i + 1}/${candidates.length}...` : 'Đang gửi...';
+    try {
+      const res = await Api.submitNomination(Object.assign({}, shared, candidates[i]));
+      if (res.success) successCount++;
+      else errors.push(`Ứng viên ${i + 1} (${candidates[i].hoTenUngVien || '—'}): ${res.message}`);
+    } catch (err) {
+      errors.push(`Ứng viên ${i + 1} (${candidates[i].hoTenUngVien || '—'}): ${err.message}`);
     }
-  } catch (err) {
+  }
+
+  if (successCount === candidates.length) {
+    reviewStatus.className = 'ok';
+    reviewStatus.textContent = candidates.length > 1 ? `Đã nộp thành công ${successCount} đề cử!` : 'Đã nộp đề cử thành công!';
+    btn.style.display = 'none';
+    document.getElementById('btnBackEdit').textContent = 'Đóng';
+    document.getElementById('nominationForm').reset();
+    document.getElementById('candidatesContainer').innerHTML = '';
+    candidateCount = 0;
+    addCandidate();
+  } else if (successCount > 0) {
     reviewStatus.className = 'err';
-    reviewStatus.textContent = 'Có lỗi xảy ra: ' + err.message;
+    reviewStatus.textContent = `Đã nộp thành công ${successCount}/${candidates.length} đề cử. Lỗi ở các ứng viên còn lại: ${errors.join(' · ')}`;
     btn.disabled = false;
-    btn.textContent = '✅ Xác nhận gửi đề cử';
+    btn.textContent = 'Thử gửi lại các ứng viên còn lỗi';
+  } else {
+    reviewStatus.className = 'err';
+    reviewStatus.textContent = errors.join(' · ');
+    btn.disabled = false;
+    btn.textContent = candidates.length > 1 ? `✅ Xác nhận gửi ${candidates.length} đề cử` : '✅ Xác nhận gửi đề cử';
   }
 };
 </script>
