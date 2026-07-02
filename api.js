@@ -55,7 +55,7 @@ function postForm(fields) {
     form.submit();
     form.remove();
 
-    setTimeout(() => { window.removeEventListener('message', onMessage); reject(new Error('Hết thời gian chờ phản hồi từ hệ thống.')); }, 60000);
+    setTimeout(() => { window.removeEventListener('message', onMessage); reject(new Error('Hết thời gian chờ phản hồi từ hệ thống.')); }, 90000);
   });
 }
 
