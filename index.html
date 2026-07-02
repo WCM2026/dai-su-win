@@ -9,11 +9,12 @@
   * { box-sizing: border-box; }
   body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); margin:0; padding:24px; color:var(--ink); }
   .wrap { max-width:720px; margin:0 auto; }
-  .header { background:linear-gradient(135deg,var(--navy),var(--navy2)); color:#fff; border-radius:14px; padding:28px 32px; margin-bottom:20px; }
+  .header { background:linear-gradient(135deg,var(--navy),var(--navy2)); background-image:linear-gradient(135deg,var(--navy),var(--navy2)),repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 2px,transparent 2px 30px),repeating-linear-gradient(-45deg,rgba(255,255,255,.05) 0 2px,transparent 2px 30px); color:#fff; border-radius:18px; padding:26px 30px 30px; margin-bottom:22px; box-shadow:0 10px 30px rgba(15,29,71,.22); border-bottom:3px solid var(--gold); }
+  .header-top { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
   .header .eyebrow { color:var(--gold); font-weight:600; letter-spacing:.08em; font-size:13px; text-transform:uppercase; }
-  .header h1 { margin:6px 0 4px; font-size:26px; }
+  .header h1 { margin:0; font-size:26px; }
   .header p { margin:0; color:#c7cfe8; font-size:14px; }
-  .card { background:#fff; border-radius:14px; padding:24px 28px; margin-bottom:16px; box-shadow:0 1px 3px rgba(0,0,0,.06); }
+  .card { background:#fff; border-radius:16px; padding:24px 28px; margin-bottom:16px; box-shadow:0 2px 10px rgba(15,29,71,.07); }
   .card h2 { font-size:15px; color:var(--navy); margin:0 0 16px; padding-bottom:10px; border-bottom:2px solid #eef0f6; }
   label { display:block; font-size:13px; font-weight:600; margin-bottom:6px; }
   .hint { font-size:12px; color:var(--muted); margin-top:-4px; margin-bottom:8px; }
@@ -22,9 +23,10 @@
   }
   textarea { min-height:90px; resize:vertical; }
   .row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
-  .core-values label.cv { display:flex; align-items:center; gap:8px; font-weight:400; font-size:13px; margin-bottom:8px; padding:8px 10px; background:#f8f9fc; border-radius:8px; }
-  .core-values input[type=checkbox] { width:16px; height:16px; margin:0; }
-  button { background:var(--red); color:#fff; border:none; padding:13px 28px; border-radius:8px; font-size:15px; font-weight:600; cursor:pointer; width:100%; }
+  .core-values label.cv { display:flex; align-items:center; gap:8px; font-weight:400; font-size:13px; margin:0; }
+  .core-values input[type=checkbox] { width:16px; height:16px; margin:0; flex-shrink:0; }
+  button { background:var(--red); color:#fff; border:none; padding:13px 28px; border-radius:8px; font-size:15px; font-weight:600; cursor:pointer; width:100%; transition:transform .12s ease,box-shadow .12s ease; }
+  button:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 6px 16px rgba(209,54,47,.25); }
   button:disabled { opacity:.6; cursor:not-allowed; }
   #status { margin-top:14px; padding:12px 14px; border-radius:8px; font-size:14px; display:none; }
   #status.ok { background:#e6f4ea; color:#1e7e34; display:block; }
@@ -35,18 +37,28 @@
   .quarter-info.open { background:#e6f4ea; color:#1e7e34; }
   .quarter-info.closed { background:#fdeceb; color:#b0271e; }
   .quarter-deadline { font-size:12.5px; font-weight:400; margin-top:6px; color:#1e7e34; }
-  .logo-badge { display:inline-flex; align-items:center; background:#fff; border-radius:8px; padding:5px 12px; margin-bottom:8px; }
+  .logo-badge { display:inline-flex; align-items:center; background:#fff; border-radius:8px; padding:5px 12px; }
   .logo-badge img { height:20px; display:block; }
-  .candidate-block { border:1.5px solid #eef0f6; border-radius:12px; padding:18px 20px; margin-bottom:16px; position:relative; }
+  .dsw-logo { display:inline-flex; align-items:center; }
+  .dsw-logo img { height:34px; display:block; }
+  .candidate-block { border:1.5px solid #eef0f6; border-radius:14px; padding:18px 20px; margin-bottom:16px; position:relative; }
   .candidate-block-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
   .candidate-block-head h3 { margin:0; font-size:14px; color:var(--navy); }
-  .candidate-remove { background:none; border:none; color:var(--red); font-weight:700; cursor:pointer; font-size:13px; }
-  .lookup-note { font-size:12px; margin-top:-4px; margin-bottom:8px; display:none; }
+  .candidate-remove { background:none; border:none; color:var(--red); font-weight:700; cursor:pointer; font-size:13px; width:auto; padding:0; }
+  .lookup-note { font-size:12px; margin-top:6px; margin-bottom:8px; display:none; }
   .lookup-note.ok { color:#1e7e34; display:block; }
   .lookup-note.err { color:#b0271e; display:block; }
+  .lookup-row { display:flex; gap:8px; align-items:flex-start; }
+  .lookup-row input { margin-bottom:0; }
+  .lookup-btn { width:auto; flex-shrink:0; background:var(--navy); padding:10px 16px; font-size:13px; white-space:nowrap; }
   .add-candidate-btn { background:#fff; color:var(--navy); border:1.5px dashed var(--navy); padding:12px; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; width:100%; margin-bottom:16px; }
   .add-candidate-btn:disabled { opacity:.5; cursor:not-allowed; }
   .candidates-hint { font-size:12px; color:var(--muted); margin:-4px 0 14px; }
+  .cv-item { background:#f8f9fc; border-radius:10px; margin-bottom:8px; padding:10px 12px; }
+  .cv-info-btn { width:auto; background:none; border:none; color:var(--navy); font-size:11.5px; font-weight:600; padding:6px 0 0 24px; cursor:pointer; text-decoration:underline; }
+  .cv-desc { padding:8px 4px 2px 24px; font-size:12.5px; color:var(--muted); line-height:1.6; }
+  .cv-desc ul { margin:0; padding-left:16px; }
+  .cv-desc li { margin-bottom:3px; }
 
   /* Modal xác nhận trước khi gửi */
   .modal-overlay { position:fixed; inset:0; background:rgba(15,29,71,.55); display:flex; align-items:center; justify-content:center; padding:20px; z-index:100; }
@@ -72,7 +84,10 @@
 <body>
 <div class="wrap">
   <div class="header">
-    <div class="logo-badge"><img src="https://datax-talent.basecdn.net/winmart/logo.png" alt="WinCommerce"></div>
+    <div class="header-top">
+      <div class="logo-badge"><img src="https://datax-talent.basecdn.net/winmart/logo.png" alt="WinCommerce"></div>
+      <div class="dsw-logo"><img src="https://s3.hn-2.cloud.cmctelecom.vn/rop/prod/UploadFile/2026/07/02/20260702133256873606c24bef.png" alt="Đại sứ WIN"></div>
+    </div>
     <h1>Đề cử Đại sứ WIN</h1>
   </div>
 
@@ -188,6 +203,24 @@ document.getElementById('loaiDonVi').addEventListener('change', async function(e
 prefillEmailDomain(document.getElementById('emailNguoiDeXuat'));
 
 // ---------- Khối ứng viên (lặp lại, tối đa 3) ----------
+const CV_DETAILS = {
+  'WIN PHỤNG SỰ': ['Lắng nghe kịp thời phản hồi của khách hàng.', 'Có thái độ thân thiện, tôn trọng và hết lòng phục vụ khách hàng.'],
+  'WIN SÁNG TẠO': ['Sẵn sàng thách thức hiện trạng để nâng cao hiệu quả công việc.', 'Cải tiến và đổi mới liên tục, không ngừng tìm kiếm các giải pháp sáng tạo nhằm tạo ra giá trị vượt trội.'],
+  'WIN TỰ CHỦ': ['Sử dụng nguồn lực của công ty như của chính mình.', 'Chủ động xác định các cơ hội, thách thức mới để học hỏi & phát triển.'],
+  'WIN KIÊN ĐỊNH': ['Thực thi các chiến lược để hiện thực hóa mục tiêu dài hạn.', 'Thể hiện tinh thần "không bao giờ bỏ cuộc" và luôn cam kết với mục tiêu của mình, ngay cả khi gặp trở ngại.'],
+  'WIN KHÁT VỌNG': ['Góp phần xây dựng môi trường làm việc và cam kết cao để đạt được mục tiêu lý tưởng.', 'Thực thi các hoạt động kinh doanh bền vững, có trách nhiệm với xã hội.']
+};
+
+function cvItemHtml(value, label) {
+  const bullets = CV_DETAILS[value].map(b => `<li>${b}</li>`).join('');
+  return `
+  <div class="cv-item">
+    <label class="cv"><input type="checkbox" data-field="gtcl" value="${value}"> ${label}</label>
+    <button type="button" class="cv-info-btn" data-action="cv-info">Xem chi tiết hành vi ⌄</button>
+    <div class="cv-desc" hidden><ul>${bullets}</ul></div>
+  </div>`;
+}
+
 function candidateBlockHtml() {
   return `
   <div class="candidate-block">
@@ -198,7 +231,10 @@ function candidateBlockHtml() {
     <div class="row">
       <div>
         <label>Mã số nhân viên</label>
-        <input type="text" data-field="maNV" placeholder="Nhập MSNV để tự động tra cứu" required>
+        <div class="lookup-row">
+          <input type="text" data-field="maNV" placeholder="Nhập MSNV" required>
+          <button type="button" class="lookup-btn" data-action="lookup">🔍 Tìm</button>
+        </div>
         <div class="lookup-note" data-field="lookupNote"></div>
       </div>
       <div><label>Họ và tên</label><input type="text" data-field="hoTenUngVien" required></div>
@@ -219,11 +255,11 @@ function candidateBlockHtml() {
 
     <label>Giá trị cốt lõi tương ứng</label>
     <div class="core-values">
-      <label class="cv"><input type="checkbox" data-field="gtcl" value="WIN PHỤNG SỰ"> WIN PHỤNG SỰ — Kiên định với hành trình phụng sự người tiêu dùng</label>
-      <label class="cv"><input type="checkbox" data-field="gtcl" value="WIN SÁNG TẠO"> WIN SÁNG TẠO — Kiên định tạo ra giá trị chuyển đổi</label>
-      <label class="cv"><input type="checkbox" data-field="gtcl" value="WIN TỰ CHỦ"> WIN TỰ CHỦ — Kiên định với tinh thần doanh nhân</label>
-      <label class="cv"><input type="checkbox" data-field="gtcl" value="WIN KIÊN ĐỊNH"> WIN KIÊN ĐỊNH — Kiên định với tầm nhìn dài hạn</label>
-      <label class="cv"><input type="checkbox" data-field="gtcl" value="WIN KHÁT VỌNG"> WIN KHÁT VỌNG — Kiên định với mục tiêu lý tưởng</label>
+      ${cvItemHtml('WIN PHỤNG SỰ', 'WIN PHỤNG SỰ — Kiên định với hành trình phụng sự người tiêu dùng')}
+      ${cvItemHtml('WIN SÁNG TẠO', 'WIN SÁNG TẠO — Kiên định tạo ra giá trị chuyển đổi')}
+      ${cvItemHtml('WIN TỰ CHỦ', 'WIN TỰ CHỦ — Kiên định với tinh thần doanh nhân')}
+      ${cvItemHtml('WIN KIÊN ĐỊNH', 'WIN KIÊN ĐỊNH — Kiên định với tầm nhìn dài hạn')}
+      ${cvItemHtml('WIN KHÁT VỌNG', 'WIN KHÁT VỌNG — Kiên định với mục tiêu lý tưởng')}
     </div>
   </div>`;
 }
@@ -251,41 +287,59 @@ addCandidate(); // bắt đầu với 1 ứng viên
 
 const candidatesContainer = document.getElementById('candidatesContainer');
 
-candidatesContainer.addEventListener('click', (e) => {
-  if (e.target.dataset.action === 'remove') {
+candidatesContainer.addEventListener('click', async (e) => {
+  const action = e.target.dataset.action;
+  if (!action) return;
+
+  if (action === 'remove') {
     e.target.closest('.candidate-block').remove();
     candidateCount--;
     refreshCandidateUI();
+    return;
+  }
+
+  if (action === 'cv-info') {
+    const desc = e.target.nextElementSibling;
+    const isHidden = desc.hasAttribute('hidden');
+    if (isHidden) { desc.removeAttribute('hidden'); e.target.textContent = 'Ẩn chi tiết hành vi ⌃'; }
+    else { desc.setAttribute('hidden', ''); e.target.textContent = 'Xem chi tiết hành vi ⌄'; }
+    return;
+  }
+
+  if (action === 'lookup') {
+    const block = e.target.closest('.candidate-block');
+    const maNVInput = block.querySelector('[data-field="maNV"]');
+    const note = block.querySelector('[data-field="lookupNote"]');
+    const maNV = maNVInput.value.trim();
+    note.style.display = 'block';
+    if (!maNV) { note.className = 'lookup-note err'; note.textContent = 'Vui lòng nhập Mã số nhân viên trước khi tìm.'; return; }
+    const btn = e.target;
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Đang tìm...';
+    note.className = 'lookup-note';
+    note.textContent = 'Đang tra cứu MSNV...';
+    try {
+      const res = await Api.lookupEmployee(maNV);
+      if (res.success) {
+        block.querySelector('[data-field="hoTenUngVien"]').value = res.item.hoTen || '';
+        block.querySelector('[data-field="chucDanh"]').value = res.item.chucDanh || '';
+        if (res.item.ngayVaoTapDoan) block.querySelector('[data-field="ngayVaoTapDoan"]').value = res.item.ngayVaoTapDoan;
+        note.className = 'lookup-note ok';
+        note.textContent = `✓ Đã tìm thấy: ${res.item.hoTen || '(chưa có tên)'}. Vui lòng kiểm tra lại thông tin.`;
+      } else {
+        note.className = 'lookup-note err';
+        note.textContent = `${res.message} Vui lòng nhập tay thông tin ứng viên.`;
+      }
+    } catch (err) {
+      note.className = 'lookup-note err';
+      note.textContent = 'Không tra cứu được lúc này (có thể do hệ thống chưa cập nhật phiên bản mới nhất). Vui lòng nhập tay thông tin ứng viên.';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
   }
 });
-
-// Tra cứu MSNV -> tự động điền Họ tên / Chức danh / Ngày vào Tập đoàn (sheet DSNS)
-candidatesContainer.addEventListener('blur', async (e) => {
-  if (e.target.dataset.field !== 'maNV') return;
-  const block = e.target.closest('.candidate-block');
-  const note = block.querySelector('[data-field="lookupNote"]');
-  const maNV = e.target.value.trim();
-  if (!maNV) { note.className = 'lookup-note'; note.style.display = 'none'; return; }
-  note.className = 'lookup-note';
-  note.style.display = 'block';
-  note.textContent = 'Đang tra cứu MSNV...';
-  try {
-    const res = await Api.lookupEmployee(maNV);
-    if (res.success) {
-      block.querySelector('[data-field="hoTenUngVien"]').value = res.item.hoTen || '';
-      block.querySelector('[data-field="chucDanh"]').value = res.item.chucDanh || '';
-      if (res.item.ngayVaoTapDoan) block.querySelector('[data-field="ngayVaoTapDoan"]').value = res.item.ngayVaoTapDoan;
-      note.className = 'lookup-note ok';
-      note.textContent = `✓ Đã tìm thấy: ${res.item.hoTen || '(chưa có tên)'}. Vui lòng kiểm tra lại thông tin.`;
-    } else {
-      note.className = 'lookup-note err';
-      note.textContent = `${res.message} Vui lòng nhập tay thông tin ứng viên.`;
-    }
-  } catch (err) {
-    note.className = 'lookup-note err';
-    note.textContent = 'Không tra cứu được lúc này, vui lòng nhập tay thông tin ứng viên.';
-  }
-}, true); // dùng capture vì sự kiện blur không nổi bọt (bubble)
 
 // Nén ảnh cho từng khối ứng viên
 candidatesContainer.addEventListener('change', async (e) => {

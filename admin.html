@@ -8,7 +8,10 @@
   :root { --navy:#1a2f6b; --navy2:#0f1d47; --gold:#f4b73f; --red:#d1362f; --bg:#f6f7fb; --ink:#1c2333; --muted:#6b7280; }
   * { box-sizing:border-box; }
   body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); margin:0; color:var(--ink); }
-  .topbar { background:linear-gradient(135deg,var(--navy),var(--navy2)); color:#fff; padding:18px 28px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+  .topbar { background:linear-gradient(135deg,var(--navy),var(--navy2)); background-image:linear-gradient(135deg,var(--navy),var(--navy2)),repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 2px,transparent 2px 28px),repeating-linear-gradient(-45deg,rgba(255,255,255,.05) 0 2px,transparent 2px 28px); color:#fff; padding:16px 28px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; border-bottom:3px solid var(--gold); box-shadow:0 4px 14px rgba(15,29,71,.18); }
+  .topbar-right { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+  .dsw-logo { display:inline-flex; align-items:center; }
+  .dsw-logo img { height:34px; display:block; }
   .brand .eyebrow { color:var(--gold); font-size:11px; letter-spacing:.08em; text-transform:uppercase; }
   .brand b { font-size:17px; }
   .controls { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
@@ -23,7 +26,7 @@
   .tab.active { color:var(--navy); border-color:var(--red); }
   .tabpage { display:none; } .tabpage.active { display:block; }
 
-  .panel { background:#fff; border-radius:14px; padding:20px 22px; margin-bottom:20px; box-shadow:0 1px 3px rgba(0,0,0,.06); }
+  .panel { background:#fff; border-radius:16px; padding:20px 22px; margin-bottom:20px; box-shadow:0 2px 10px rgba(15,29,71,.07); }
   .panel-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:10px; }
   .panel-head h2 { font-size:15px; color:var(--navy); margin:0; }
   .scope-note { font-size:12px; color:var(--muted); }
@@ -47,15 +50,31 @@
   .quarter-select { padding:8px 12px; border:1px solid #dde1ea; border-radius:8px; font-size:13px; margin-bottom:14px; }
   .logo-badge { background:#fff; border-radius:8px; padding:5px 12px; display:inline-flex; align-items:center; }
   .logo-badge img { height:18px; display:block; }
+  .users-table-wrap { overflow-x:auto; margin-bottom:16px; border:1px solid #eef0f6; border-radius:10px; }
+  .users-table { width:100%; border-collapse:collapse; }
+  .users-table th, .users-table td { text-align:left; padding:11px 14px; font-size:13px; border-bottom:1px solid #eef0f6; white-space:nowrap; }
+  .users-table td:nth-child(4) { white-space:normal; min-width:220px; }
+  .users-table th { background:#f8f9fc; color:var(--navy); font-weight:600; font-size:11px; text-transform:uppercase; }
+  .users-table tbody tr:hover { background:#fafbfd; }
+  .role-badge { padding:4px 10px; border-radius:20px; font-size:11px; font-weight:700; }
+  .role-admin { background:#eef0f6; color:var(--navy); }
+  .role-hrbp { background:#e6f1ff; color:#1a5fb4; }
+  .status-ok { color:#1e7e34; font-weight:600; font-size:12px; }
+  .status-pending { color:#a9700f; font-weight:600; font-size:12px; }
+  .row-remove { width:auto; background:none; border:1px solid #f3c9c6; color:var(--red); padding:5px 12px; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer; }
+  .row-remove:hover { background:#fdeceb; }
 </style>
 </head>
 <body>
 
 <div class="topbar">
   <div class="brand" style="display:flex;align-items:center;gap:12px;"><span class="logo-badge"><img src="https://datax-talent.basecdn.net/winmart/logo.png" alt="WinCommerce"></span><b>⚙️ Admin panel — Đại sứ WIN</b></div>
-  <div class="controls">
-    <span class="who" id="whoami">...</span>
-    <a href="dashboard.html" class="navbtn">← Về Dashboard</a>
+  <div class="topbar-right">
+    <div class="dsw-logo"><img src="https://s3.hn-2.cloud.cmctelecom.vn/rop/prod/UploadFile/2026/07/02/20260702133256873606c24bef.png" alt="Đại sứ WIN"></div>
+    <div class="controls">
+      <span class="who" id="whoami">...</span>
+      <a href="dashboard.html" class="navbtn">← Về Dashboard</a>
+    </div>
   </div>
 </div>
 
@@ -110,7 +129,12 @@
           <a class="btn secondary" style="text-decoration:none;" id="sheetLinkUsers" target="_blank">📄 Mở trong Google Sheet (sửa hàng loạt)</a>
         </div>
         <div class="scope-note" style="margin-bottom:12px;">HRBP chỉ xem/duyệt được đề cử thuộc phạm vi được gán. VD phạm vi: <code>SSC</code> hoặc <code>WinMart Miền Bắc</code> (nhiều phạm vi cách nhau bằng dấu phẩy, khớp với tên trong danh mục Khối/Phòng). Nếu cần thêm/sửa nhiều người cùng lúc, dùng nút "Mở trong Google Sheet" ở trên sẽ nhanh hơn.</div>
-        <div class="list-wrap" id="userList"><div class="loading">Đang tải...</div></div>
+        <div class="users-table-wrap">
+          <table class="users-table">
+            <thead><tr><th>Họ và tên</th><th>Email</th><th>Vai trò</th><th>Phạm vi phụ trách</th><th>Trạng thái</th><th></th></tr></thead>
+            <tbody id="userRows"><tr><td colspan="6" class="loading">Đang tải...</td></tr></tbody>
+          </table>
+        </div>
         <div class="add-row">
           <input id="newUserName" placeholder="Họ và tên" style="min-width:160px;">
           <input id="newUserEmail" placeholder="ten@winmart.masangroup.com" style="min-width:220px;">
@@ -212,13 +236,23 @@ document.getElementById('addQuarterBtn').onclick = async () => {
 document.getElementById('exportBtn').onclick = () => window.open(Api.exportCsvUrl(session.token, currentQuarterForExport), '_blank');
 
 // ---------- Users ----------
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+}
 async function loadUsers() {
+  const tbody = document.getElementById('userRows');
   const res = await Api.listUsers(session.token);
-  document.getElementById('userList').innerHTML = res.items.map(u => `
-    <div class="qtag">
-      <b>${u.HoTen || '(chưa có tên)'}</b> · ${u.Email} · ${u.Role === 'admin' ? 'Admin' : 'HRBP'} · ${u.PhamViPhuTrach || '—'} ${u.CoMatKhau ? '' : '<span style="color:#a9700f;">(chưa đăng nhập lần đầu)</span>'}
-      <button onclick="removeUser('${u.Email}')">✕</button>
-    </div>`).join('');
+  if (!res.success) { tbody.innerHTML = `<tr><td colspan="6" style="color:var(--red);">${esc(res.message)}</td></tr>`; return; }
+  if (!res.items.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">Chưa có người dùng nào.</td></tr>'; return; }
+  tbody.innerHTML = res.items.map(u => `
+    <tr>
+      <td><b>${esc(u.HoTen) || '(chưa có tên)'}</b></td>
+      <td>${esc(u.Email)}</td>
+      <td><span class="role-badge ${u.Role === 'admin' ? 'role-admin' : 'role-hrbp'}">${u.Role === 'admin' ? 'Admin' : 'HRBP'}</span></td>
+      <td>${esc(u.PhamViPhuTrach) || '—'}</td>
+      <td>${u.CoMatKhau ? '<span class="status-ok">● Đã kích hoạt</span>' : '<span class="status-pending">● Chưa đăng nhập lần đầu</span>'}</td>
+      <td><button class="row-remove" onclick="removeUser('${esc(u.Email)}')">✕ Xóa</button></td>
+    </tr>`).join('');
 }
 async function removeUser(email) {
   if (!confirm(`Xóa quyền truy cập của ${email}?`)) return;

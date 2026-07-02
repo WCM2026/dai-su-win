@@ -7,13 +7,38 @@
 <style>
   :root { --navy:#1a2f6b; --navy2:#0f1d47; --gold:#f4b73f; --red:#d1362f; --bg:#f6f7fb; --ink:#1c2333; --muted:#6b7280; }
   * { box-sizing:border-box; }
-  body { font-family:'Segoe UI',system-ui,sans-serif; background:linear-gradient(135deg,var(--navy),var(--navy2)); min-height:100vh; margin:0; display:flex; align-items:center; justify-content:center; padding:20px; }
-  .card { background:#fff; border-radius:16px; padding:36px 32px; width:100%; max-width:380px; box-shadow:0 20px 40px rgba(0,0,0,.2); }
-  .eyebrow { color:var(--gold); font-size:12px; letter-spacing:.08em; text-transform:uppercase; font-weight:700; text-align:center; }
-  h1 { font-size:20px; color:var(--navy); text-align:center; margin:6px 0 24px; }
+  html, body { height:100%; }
+  body {
+    font-family:'Segoe UI',system-ui,sans-serif; margin:0; padding:20px;
+    min-height:100vh; display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(135deg,var(--navy),var(--navy2));
+    position:relative; overflow-x:hidden;
+  }
+  /* Dải sóng xanh phía dưới nền, gợi ý từ backdrop poster */
+  body::before {
+    content:''; position:fixed; left:0; right:0; bottom:0; height:38vh; pointer-events:none; z-index:0;
+    background:
+      radial-gradient(120% 90% at 22% 100%, rgba(90,200,255,.4), transparent 60%),
+      radial-gradient(120% 90% at 78% 100%, rgba(40,150,230,.38), transparent 60%),
+      radial-gradient(140% 100% at 50% 120%, rgba(20,110,190,.35), transparent 65%);
+  }
+  .card { position:relative; z-index:1; background:#fff; border-radius:18px; width:100%; max-width:380px; overflow:hidden; box-shadow:0 24px 48px rgba(0,0,0,.28); }
+  .card-hero {
+    background:linear-gradient(135deg,var(--navy),var(--navy2));
+    background-image:linear-gradient(135deg,var(--navy),var(--navy2)),repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 2px,transparent 2px 28px),repeating-linear-gradient(-45deg,rgba(255,255,255,.05) 0 2px,transparent 2px 28px);
+    padding:26px 20px 20px; display:flex; flex-direction:column; align-items:center; gap:10px;
+    border-bottom:3px solid var(--gold);
+  }
+  .logo-badge { display:inline-flex; align-items:center; background:#fff; border-radius:8px; padding:5px 12px; }
+  .logo-badge img { height:20px; display:block; }
+  .dsw-logo { display:inline-flex; align-items:center; }
+  .dsw-logo img { height:34px; display:block; }
+  .card-body { padding:26px 32px 32px; }
+  h1 { font-size:19px; color:var(--navy); text-align:center; margin:0 0 22px; }
   label { display:block; font-size:13px; font-weight:600; margin-bottom:6px; color:var(--ink); }
   input { width:100%; padding:11px 12px; border:1px solid #dde1ea; border-radius:8px; font-size:14px; margin-bottom:14px; }
-  button { width:100%; background:var(--red); color:#fff; border:none; padding:12px; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; }
+  button { width:100%; background:var(--red); color:#fff; border:none; padding:12px; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; transition:transform .12s ease,box-shadow .12s ease; }
+  button:hover { transform:translateY(-1px); box-shadow:0 6px 16px rgba(209,54,47,.25); }
   button.secondary { background:var(--navy); }
   .msg { font-size:13px; padding:10px 12px; border-radius:8px; margin-bottom:14px; display:none; }
   .msg.ok { background:#e6f4ea; color:#1e7e34; display:block; }
@@ -21,40 +46,43 @@
   .step { display:none; }
   .step.active { display:block; }
   .link { text-align:center; font-size:12px; color:var(--muted); margin-top:8px; cursor:pointer; text-decoration:underline; }
-  .logo-badge { display:flex; justify-content:center; margin-bottom:14px; }
-  .logo-badge img { height:22px; display:block; }
 </style>
 </head>
 <body>
 <div class="card">
-  <div class="logo-badge"><img src="https://datax-talent.basecdn.net/winmart/logo.png" alt="WinCommerce"></div>
-  <h1>Đăng nhập Dashboard Đại sứ WIN</h1>
-  <div id="msg" class="msg"></div>
-
-  <!-- Bước 1: nhập email -> chọn OTP (lần đầu) hoặc mật khẩu (đã có) -->
-  <div class="step active" id="stepEmail">
-    <label>Email công ty</label>
-    <input type="text" id="email" placeholder="ten@winmart.masangroup.com">
-    <button id="btnPassword">Đăng nhập bằng mật khẩu</button>
-    <div class="link" id="linkOtp">Chưa có mật khẩu? Nhận mã OTP qua email</div>
+  <div class="card-hero">
+    <div class="logo-badge"><img src="https://datax-talent.basecdn.net/winmart/logo.png" alt="WinCommerce"></div>
+    <div class="dsw-logo"><img src="https://s3.hn-2.cloud.cmctelecom.vn/rop/prod/UploadFile/2026/07/02/20260702133256873606c24bef.png" alt="Đại sứ WIN"></div>
   </div>
+  <div class="card-body">
+    <h1>Đăng nhập</h1>
+    <div id="msg" class="msg"></div>
 
-  <!-- Bước 2a: đăng nhập bằng mật khẩu -->
-  <div class="step" id="stepPassword">
-    <label>Mật khẩu</label>
-    <input type="password" id="password">
-    <button id="btnDoLogin">Đăng nhập</button>
-    <div class="link" id="linkBack1">← Quay lại</div>
-  </div>
+    <!-- Bước 1: nhập email -> chọn OTP (lần đầu) hoặc mật khẩu (đã có) -->
+    <div class="step active" id="stepEmail">
+      <label>Email công ty</label>
+      <input type="text" id="email" placeholder="ten@winmart.masangroup.com">
+      <button id="btnPassword">Đăng nhập bằng mật khẩu</button>
+      <div class="link" id="linkOtp">Chưa có mật khẩu? Nhận mã OTP qua email</div>
+    </div>
 
-  <!-- Bước 2b: OTP lần đầu -->
-  <div class="step" id="stepOtp">
-    <label>Mã OTP đã gửi tới email</label>
-    <input type="text" id="otp" placeholder="6 chữ số">
-    <label>Tạo mật khẩu cá nhân</label>
-    <input type="password" id="newPassword" placeholder="Tối thiểu 6 ký tự">
-    <button id="btnSetPassword">Xác nhận & tạo mật khẩu</button>
-    <div class="link" id="linkBack2">← Quay lại</div>
+    <!-- Bước 2a: đăng nhập bằng mật khẩu -->
+    <div class="step" id="stepPassword">
+      <label>Mật khẩu</label>
+      <input type="password" id="password">
+      <button id="btnDoLogin">Đăng nhập</button>
+      <div class="link" id="linkBack1">← Quay lại</div>
+    </div>
+
+    <!-- Bước 2b: OTP lần đầu -->
+    <div class="step" id="stepOtp">
+      <label>Mã OTP đã gửi tới email</label>
+      <input type="text" id="otp" placeholder="6 chữ số">
+      <label>Tạo mật khẩu cá nhân</label>
+      <input type="password" id="newPassword" placeholder="Tối thiểu 6 ký tự">
+      <button id="btnSetPassword">Xác nhận & tạo mật khẩu</button>
+      <div class="link" id="linkBack2">← Quay lại</div>
+    </div>
   </div>
 </div>
 
