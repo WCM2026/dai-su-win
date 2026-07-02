@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard · Đại sứ WIN</title>
+<style>
+  :root { --navy:#1a2f6b; --navy2:#0f1d47; --gold:#f4b73f; --red:#d1362f; --bg:#f6f7fb; --ink:#1c2333; --muted:#6b7280; }
+  * { box-sizing:border-box; }
+  body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); margin:0; color:var(--ink); }
+  .topbar { background:linear-gradient(135deg,var(--navy),var(--navy2)); color:#fff; padding:18px 28px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+  .brand .eyebrow { color:var(--gold); font-size:11px; letter-spacing:.08em; text-transform:uppercase; }
+  .brand b { font-size:17px; }
+  .controls { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  select, .who { background:rgba(255,255,255,.12); color:#fff; border:1px solid rgba(255,255,255,.3); border-radius:8px; padding:8px 12px; font-size:13px; }
+  select option { color:#1c2333; }
+  .logout { background:none; border:1px solid rgba(255,255,255,.4); color:#fff; padding:8px 14px; border-radius:8px; cursor:pointer; font-size:13px; }
+  .wrap { max-width:1200px; margin:0 auto; padding:24px 28px 60px; }
+
+  .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; margin-bottom:20px; }
+  .stat-card { background:#fff; border-radius:12px; padding:18px 20px; box-shadow:0 1px 3px rgba(0,0,0,.06); }
+  .stat-card .num { font-size:28px; font-weight:700; color:var(--navy); }
+  .stat-card .label { font-size:12px; color:var(--muted); margin-top:4px; }
+  .stat-card.gold .num { color:#b8860b; } .stat-card.green .num { color:#1e7e34; } .stat-card.red .num { color:var(--red); }
+
+  .panel { background:#fff; border-radius:14px; padding:20px 22px; margin-bottom:20px; box-shadow:0 1px 3px rgba(0,0,0,.06); }
+  .panel-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:10px; }
+  .panel-head h2 { font-size:15px; color:var(--navy); margin:0; }
+  .scope-note { font-size:12px; color:var(--muted); }
+
+  /* Pipeline timeline — sinh động hơn */
+  .pipeline { display:flex; align-items:flex-start; gap:0; padding:14px 0 6px; overflow-x:auto; position:relative; }
+  .pipeline-track { position:absolute; top:31px; left:5%; right:5%; height:4px; background:#e5e8f0; border-radius:4px; z-index:0; }
+  .pipeline-track-fill { height:100%; background:linear-gradient(90deg,#1e7e34,var(--gold)); border-radius:4px; width:0%; transition:width 1.1s cubic-bezier(.4,0,.2,1); }
+  .step { flex:1; min-width:150px; text-align:center; position:relative; padding:0 8px; z-index:1; }
+  .step .dot { width:38px; height:38px; border-radius:50%; background:#e5e8f0; color:var(--muted); display:flex; align-items:center; justify-content:center; font-weight:700; margin:0 auto 10px; font-size:15px; border:3px solid #fff; box-shadow:0 0 0 2px #e5e8f0; transition:all .4s ease; }
+  .step.done .dot { background:#1e7e34; color:#fff; box-shadow:0 0 0 2px #1e7e34; transform:scale(1.05); }
+  .step.active .dot { background:var(--gold); color:#5a3d00; box-shadow:0 0 0 2px var(--gold); animation:pulse 1.8s infinite; }
+  .step.overdue .dot { background:var(--red); color:#fff; box-shadow:0 0 0 2px var(--red); animation:pulse-red 1.8s infinite; }
+  @keyframes pulse { 0%,100%{ box-shadow:0 0 0 2px var(--gold); } 50%{ box-shadow:0 0 0 8px rgba(244,183,63,.25); } }
+  @keyframes pulse-red { 0%,100%{ box-shadow:0 0 0 2px var(--red); } 50%{ box-shadow:0 0 0 8px rgba(209,54,47,.25); } }
+  .step .title { font-weight:700; font-size:13px; color:var(--navy); }
+  .step .deadline { font-size:11px; color:var(--muted); margin-top:2px; }
+  .step .count { font-size:12px; margin-top:6px; font-weight:600; opacity:0; animation:fadeUp .5s ease forwards; animation-delay:.3s; }
+  @keyframes fadeUp { from{ opacity:0; transform:translateY(4px);} to{ opacity:1; transform:translateY(0);} }
+  .step.overdue .count::before { content:'⏰ '; }
+
+  /* Cây thư mục thống kê Khối/Phòng */
+  .dept-tree { display:flex; flex-direction:column; gap:8px; }
+  .dept-group { border:1px solid #eef0f6; border-radius:10px; overflow:hidden; }
+  .dept-group-head { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; background:#f8f9fc; cursor:pointer; user-select:none; }
+  .dept-group-head:hover { background:#eef0f6; }
+  .dept-group-head .name { font-weight:700; color:var(--navy); font-size:14px; display:flex; align-items:center; gap:8px; }
+  .dept-group-head .arrow { transition:transform .25s ease; font-size:11px; color:var(--muted); }
+  .dept-group.open .arrow { transform:rotate(90deg); }
+  .dept-group-head .summary { font-size:12px; color:var(--muted); }
+  .dept-group-body { max-height:0; overflow:hidden; transition:max-height .3s ease; }
+  .dept-group.open .dept-group-body { max-height:600px; }
+  .dept-item { display:flex; justify-content:space-between; align-items:center; padding:9px 16px 9px 34px; font-size:13px; border-top:1px solid #f3f4f8; }
+  .dept-item.zero { background:#fdeceb; }
+  .dept-item.zero .dept-item-name::before { content:'⚠️ '; }
+  .dept-item-count { font-weight:700; color:var(--navy); }
+  .dept-item.zero .dept-item-count { color:var(--red); }
+
+  table { width:100%; border-collapse:collapse; }
+  th, td { text-align:left; padding:10px 12px; font-size:13px; border-bottom:1px solid #eef0f6; }
+  th { background:#f8f9fc; color:var(--navy); font-weight:600; font-size:12px; text-transform:uppercase; }
+  tbody tr { cursor:pointer; }
+  tbody tr:hover { background:#f8f9fc; }
+  .badge { padding:4px 10px; border-radius:20px; font-size:11px; font-weight:600; white-space:nowrap; }
+  .b-cho { background:#fff4e0; color:#a9700f; } .b-ok { background:#e6f4ea; color:#1e7e34; } .b-tuchoi { background:#fdeceb; color:#b0271e; }
+
+  .btn { background:var(--red); color:#fff; border:none; padding:8px 16px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; }
+  .btn.secondary { background:var(--navy); }
+  .btn.ghost { background:#fff; color:var(--navy); border:1px solid var(--navy); }
+  .quarter-manage, .user-manage { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; }
+  .qtag { background:#eef0f6; padding:6px 12px; border-radius:20px; font-size:12px; display:flex; align-items:center; gap:8px; }
+  .qtag button { background:none; border:none; color:var(--red); cursor:pointer; font-weight:700; }
+  .add-quarter, .add-user { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+  .add-quarter input, .add-user input, .add-user select { padding:8px 10px; border:1px solid #dde1ea; border-radius:8px; font-size:13px; }
+  .hidden { display:none !important; }
+  .loading { text-align:center; padding:30px; color:var(--muted); }
+
+  .tabs { display:flex; gap:8px; margin-bottom:16px; border-bottom:1px solid #eef0f6; }
+  .tab { padding:10px 4px; font-size:13px; font-weight:600; color:var(--muted); cursor:pointer; border-bottom:2px solid transparent; }
+  .tab.active { color:var(--navy); border-color:var(--red); }
+
+  /* Modal chi tiết đề cử — thiết kế theo phiếu Excel gốc */
+  .modal-overlay { position:fixed; inset:0; background:rgba(15,29,71,.55); display:flex; align-items:center; justify-content:center; padding:20px; z-index:100; }
+  .modal-overlay.hidden { display:none; }
+  .modal { background:#fff; border-radius:16px; max-width:760px; width:100%; max-height:88vh; overflow-y:auto; }
+  .modal-head { background:linear-gradient(135deg,var(--navy),var(--navy2)); color:#fff; padding:22px 28px; border-radius:16px 16px 0 0; display:flex; justify-content:space-between; align-items:flex-start; gap:16px; }
+  .modal-head .eyebrow { color:var(--gold); font-size:11px; text-transform:uppercase; letter-spacing:.08em; }
+  .modal-head h2 { margin:4px 0; font-size:22px; }
+  .modal-head .sub { font-size:13px; color:#c7cfe8; }
+  .modal-close { background:rgba(255,255,255,.15); border:none; color:#fff; width:32px; height:32px; border-radius:50%; cursor:pointer; font-size:16px; flex-shrink:0; }
+  .modal-body { padding:24px 28px; }
+  .detail-grid { display:grid; grid-template-columns:1fr 130px; gap:24px; margin-bottom:20px; }
+  .detail-info dl { margin:0; display:grid; grid-template-columns:130px 1fr; gap:8px 12px; font-size:13px; }
+  .detail-info dt { color:var(--muted); }
+  .detail-info dd { margin:0; font-weight:600; }
+  .portrait { width:130px; height:130px; border-radius:10px; object-fit:cover; border:1px solid #eef0f6; background:#f8f9fc; }
+  .portrait.placeholder { display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:12px; text-align:center; }
+  .story-section { margin-bottom:16px; }
+  .story-section h3 { font-size:12px; text-transform:uppercase; letter-spacing:.05em; color:var(--navy); margin:0 0 6px; }
+  .story-section p { margin:0; font-size:14px; line-height:1.6; white-space:pre-wrap; }
+  .cv-tags { display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; }
+  .cv-tag { background:#eef0f6; color:var(--navy); font-size:12px; font-weight:600; padding:5px 12px; border-radius:20px; }
+  .decision-bar { display:flex; gap:10px; margin-top:20px; padding-top:20px; border-top:1px solid #eef0f6; }
+  .decision-bar button { flex:1; }
+  .decide-msg { margin-top:12px; padding:10px 12px; border-radius:8px; font-size:13px; display:none; }
+  .decide-msg.ok { background:#e6f4ea; color:#1e7e34; display:block; }
+  .decide-msg.err { background:#fdeceb; color:#b0271e; display:block; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand"><div class="eyebrow">WinCommerce</div><b>Dashboard Đại sứ WIN</b></div>
+  <div class="controls">
+    <span class="who" id="whoami">...</span>
+    <select id="quarterSelect"></select>
+    <a href="admin.html" class="logout" id="adminLink" style="display:none;text-decoration:none;">⚙️ Admin panel</a>
+    <button class="logout" id="logoutBtn">Đăng xuất</button>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="stats" id="statsRow"><div class="loading">Đang tải thống kê...</div></div>
+
+  <div class="panel">
+    <div class="panel-head"><h2>📍 Tiến độ Quý đang chọn</h2></div>
+    <div class="pipeline" id="pipeline">
+      <div class="pipeline-track"><div class="pipeline-track-fill" id="pipelineFill"></div></div>
+      <div class="loading">Đang tải tiến độ...</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <h2>🗂️ Thống kê đề cử theo Khối/Phòng</h2>
+      <div class="scope-note">Bấm vào từng nhóm để xem chi tiết · dòng đỏ = chưa nộp</div>
+    </div>
+    <div class="dept-tree" id="deptTree"><div class="loading">Đang tải thống kê...</div></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <h2>Danh sách đề cử</h2>
+      <div class="scope-note" id="scopeNote"></div>
+    </div>
+    <div class="scope-note" style="margin-bottom:8px;">💡 Bấm vào 1 dòng để xem chi tiết đề cử và xét duyệt.</div>
+    <table>
+      <thead><tr><th>Ứng viên</th><th>Đơn vị</th><th>Người đề xuất</th><th>Trạng thái</th><th>Ngày nộp</th></tr></thead>
+      <tbody id="rows"><tr><td colspan="5" class="loading">Đang tải...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal chi tiết đề cử -->
+<div class="modal-overlay hidden" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <div class="eyebrow">Phiếu đề xuất Đại sứ WIN</div>
+        <h2 id="mTen">—</h2>
+        <div class="sub" id="mSub">—</div>
+      </div>
+      <button class="modal-close" id="modalClose">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="detail-grid">
+        <div class="detail-info">
+          <dl>
+            <dt>Mã số NV</dt><dd id="mMaNV">—</dd>
+            <dt>Chức danh</dt><dd id="mChucDanh">—</dd>
+            <dt>Ngày vào Tập đoàn</dt><dd id="mNgayVao">—</dd>
+            <dt>Đơn vị</dt><dd id="mDonVi">—</dd>
+            <dt>Người đề xuất</dt><dd id="mNguoiDeXuat">—</dd>
+            <dt>Trạng thái</dt><dd><span class="badge" id="mTrangThai">—</span></dd>
+          </dl>
+        </div>
+        <img class="portrait" id="mAnh" src="">
+      </div>
+
+      <div class="story-section"><h3>Bối cảnh</h3><p id="mBoiCanh">—</p></div>
+      <div class="story-section"><h3>Hành động / đóng góp</h3><p id="mHanhDong">—</p></div>
+      <div class="story-section"><h3>Kết quả nhận được</h3><p id="mKetQua">—</p></div>
+      <div class="story-section"><h3>Giá trị cốt lõi</h3><div class="cv-tags" id="mGtcl"></div></div>
+
+      <div class="decision-bar hidden" id="decisionBar">
+        <button class="btn" id="btnApprove">✅ Duyệt</button>
+        <button class="btn secondary" id="btnReject" style="background:#c0392b;">❌ Từ chối</button>
+      </div>
+      <div class="decide-msg" id="decideMsg"></div>
+    </div>
+  </div>
+</div>
+
+<script src="api.js"></script>
+<script>
+const session = Session.requireLogin();
+let currentQuarter = 'all';
+let currentItems = [];
+
+document.getElementById('logoutBtn').onclick = () => { Session.clear(); window.location.href = 'login.html'; };
+
+function badgeClass(s) { if (s === 'Đã vinh danh') return 'b-ok'; if (s === 'Từ chối') return 'b-tuchoi'; return 'b-cho'; }
+
+// ---------- Quý ----------
+async function loadQuarters() {
+  const res = await Api.getQuarters();
+  const sel = document.getElementById('quarterSelect');
+  sel.innerHTML = res.items.map(q => `<option value="${q.MaQuy}">${q.TenQuy}</option>`).join('') + '<option value="all">Tất cả các Quý</option>';
+  if (res.items.length) currentQuarter = res.items.find(q => q.TrangThai === 'Active')?.MaQuy || res.items[0].MaQuy;
+  sel.value = currentQuarter;
+}
+
+// ---------- Pipeline timeline ----------
+function renderPipeline(p) {
+  const el = document.getElementById('pipeline');
+  if (!p.success) { el.innerHTML = `<div class="loading">${p.message}</div>`; return; }
+  const today = new Date(p.today);
+  const steps = [
+    { title: 'Bước 1 · Đơn vị đề cử', deadline: p.hanB1, count: `${p.b1_daNop} đã nộp` },
+    { title: 'Bước 2 · HRBP tổng hợp', deadline: p.hanB2, count: `${p.b2_choHRBP} đang chờ` },
+    { title: 'Bước 3 · Phê duyệt & vinh danh', deadline: p.hanB3, count: `${p.b3_choGD} chờ GĐ · ${p.hoanTat} đã vinh danh` }
+  ];
+  let doneCount = 0, activeCount = 0;
+  const stepsHtml = steps.map((s, i) => {
+    const dl = new Date(s.deadline);
+    const passed = today > dl;
+    const stepDone = i === 0 ? p.b1_daNop > 0 && passed : i === 1 ? p.b2_choHRBP === 0 && passed : p.b3_choGD === 0 && p.hoanTat + p.tuChoi > 0;
+    const cls = passed && !stepDone ? 'overdue' : stepDone ? 'done' : 'active';
+    if (cls === 'done') doneCount++; else if (cls === 'active') activeCount++;
+    return `<div class="step ${cls}"><div class="dot">${cls === 'done' ? '✓' : i + 1}</div>
+      <div class="title">${s.title}</div>
+      <div class="deadline">Hạn: ${dl.toLocaleDateString('vi-VN')}${passed ? ' (đã qua)' : ''}</div>
+      <div class="count">${s.count}</div></div>`;
+  }).join('');
+
+  el.innerHTML = `<div class="pipeline-track"><div class="pipeline-track-fill" id="pipelineFill"></div></div>` + stepsHtml;
+
+  const percent = Math.min(100, ((doneCount + activeCount * 0.5) / 3) * 100);
+  requestAnimationFrame(() => { setTimeout(() => { const fill = document.getElementById('pipelineFill'); if (fill) fill.style.width = percent + '%'; }, 80); });
+}
+
+// ---------- Cây thư mục thống kê Khối/Phòng ----------
+async function loadDeptTree() {
+  const res = await Api.getDeptStats(session.token, currentQuarter);
+  const el = document.getElementById('deptTree');
+  if (!res.success) { el.innerHTML = `<div class="loading">${res.message}</div>`; return; }
+  if (!res.items.length) { el.innerHTML = '<div class="loading">Không có dữ liệu trong phạm vi của bạn.</div>'; return; }
+
+  const groups = {};
+  res.items.forEach(d => { (groups[d.LoaiDonVi] = groups[d.LoaiDonVi] || []).push(d); });
+
+  el.innerHTML = Object.entries(groups).map(([loai, items], gi) => {
+    const total = items.reduce((s, d) => s + d.SoLuong, 0);
+    const zeroCount = items.filter(d => d.SoLuong === 0).length;
+    return `<div class="dept-group ${gi === 0 ? 'open' : ''}" id="group-${loai}">
+      <div class="dept-group-head" onclick="document.getElementById('group-${loai}').classList.toggle('open')">
+        <span class="name"><span class="arrow">▶</span> ${loai}</span>
+        <span class="summary">${total} đề cử · ${items.length} đơn vị${zeroCount ? ` · <span style="color:var(--red);font-weight:600;">${zeroCount} chưa nộp</span>` : ''}</span>
+      </div>
+      <div class="dept-group-body">
+        ${items.map(d => `<div class="dept-item ${d.SoLuong === 0 ? 'zero' : ''}">
+          <span class="dept-item-name">${d.TenKhoiPhong}</span>
+          <span class="dept-item-count">${d.SoLuong}${d.DaVinhDanh ? ` <span style="color:#1e7e34;font-weight:400;">(${d.DaVinhDanh} vinh danh)</span>` : ''}</span>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ---------- Stats + list ----------
+async function loadAll() {
+  const [stats, data, pipeline] = await Promise.all([
+    Api.getStats(session.token, currentQuarter),
+    Api.getData(session.token, currentQuarter),
+    currentQuarter !== 'all' ? Api.getPipeline(session.token, currentQuarter) : Promise.resolve({ success: false, message: 'Chọn 1 Quý cụ thể để xem tiến độ.' })
+  ]);
+
+  if (!stats.success) { alert(stats.message); Session.clear(); window.location.href = 'login.html'; return; }
+
+  document.getElementById('statsRow').innerHTML = `
+    <div class="stat-card"><div class="num">${stats.total}</div><div class="label">Tổng đề cử</div></div>
+    <div class="stat-card gold"><div class="num">${stats.pending}</div><div class="label">Đang chờ duyệt</div></div>
+    <div class="stat-card green"><div class="num">${stats.honored}</div><div class="label">Đã vinh danh</div></div>
+    <div class="stat-card red"><div class="num">${stats.rejected}</div><div class="label">Từ chối</div></div>`;
+
+  renderPipeline(pipeline);
+  loadDeptTree();
+
+  document.getElementById('scopeNote').textContent = session.role === 'admin' ? 'Đang xem: toàn bộ đơn vị' : `Đang xem: phạm vi phụ trách (${session.phamVi})`;
+
+  currentItems = data.items || [];
+  document.getElementById('rows').innerHTML = currentItems.length ? currentItems.map(r => `
+    <tr onclick="openDetail('${r.ID}')">
+      <td>${r.HoTenUngVien}</td><td>${r.TenDonVi}</td><td>${r.NguoiDeXuat}</td>
+      <td><span class="badge ${badgeClass(r.TrangThai)}">${r.TrangThai}</span></td>
+      <td>${r.ThoiGianNop ? new Date(r.ThoiGianNop).toLocaleDateString('vi-VN') : ''}</td>
+    </tr>`).join('') : '<tr><td colspan="5" style="text-align:center;color:#6b7280;padding:20px;">Không có đề cử nào.</td></tr>';
+}
+
+document.getElementById('quarterSelect').addEventListener('change', (e) => { currentQuarter = e.target.value; loadAll(); });
+
+// ---------- Modal chi tiết ----------
+let currentDetailId = null;
+
+async function openDetail(id) {
+  currentDetailId = id;
+  document.getElementById('modalOverlay').classList.remove('hidden');
+  document.getElementById('decideMsg').className = 'decide-msg';
+  const res = await Api.getDetail(session.token, id);
+  if (!res.success) { alert(res.message); closeDetail(); return; }
+
+  const it = res.item, story = res.story;
+  document.getElementById('mTen').textContent = it.HoTenUngVien;
+  document.getElementById('mSub').textContent = `${it.TenDonVi} · ${it.Quy}`;
+  document.getElementById('mMaNV').textContent = it.MaNV;
+  document.getElementById('mChucDanh').textContent = it.ChucDanh;
+  document.getElementById('mNgayVao').textContent = it.NgayVaoTapDoan ? new Date(it.NgayVaoTapDoan).toLocaleDateString('vi-VN') : '—';
+  document.getElementById('mDonVi').textContent = `${it.TenDonVi} (${it.LoaiDonVi} · ${it.MienVung_Khoi})`;
+  document.getElementById('mNguoiDeXuat').textContent = it.NguoiDeXuat;
+  const badge = document.getElementById('mTrangThai');
+  badge.textContent = it.TrangThai; badge.className = 'badge ' + badgeClass(it.TrangThai);
+
+  const img = document.getElementById('mAnh');
+  if (it.AnhChanDungURL) { img.src = it.AnhChanDungURL; img.classList.remove('placeholder'); }
+  else { img.removeAttribute('src'); img.classList.add('placeholder'); img.alt = 'Không có ảnh'; }
+
+  document.getElementById('mBoiCanh').textContent = story.boiCanh || '—';
+  document.getElementById('mHanhDong').textContent = story.hanhDong || '—';
+  document.getElementById('mKetQua').textContent = story.ketQua || '—';
+  document.getElementById('mGtcl').innerHTML = (it.GiaTriCotLoi || '').split(',').filter(Boolean).map(v => `<span class="cv-tag">${v.trim()}</span>`).join('') || '<span style="color:#6b7280;font-size:13px;">Chưa chọn</span>';
+
+  document.getElementById('decisionBar').classList.toggle('hidden', !res.canDecide);
+}
+
+function closeDetail() { document.getElementById('modalOverlay').classList.add('hidden'); }
+document.getElementById('modalClose').onclick = closeDetail;
+document.getElementById('modalOverlay').addEventListener('click', (e) => { if (e.target.id === 'modalOverlay') closeDetail(); });
+
+async function decide(approved) {
+  const msg = document.getElementById('decideMsg');
+  const res = await Api.decide(session.token, currentDetailId, approved);
+  msg.className = 'decide-msg ' + (res.success ? 'ok' : 'err');
+  msg.textContent = res.message;
+  if (res.success) { document.getElementById('decisionBar').classList.add('hidden'); loadAll(); }
+}
+document.getElementById('btnApprove').onclick = () => decide(true);
+document.getElementById('btnReject').onclick = () => decide(false);
+
+// ---------- Init ----------
+(async function init() {
+  document.getElementById('whoami').textContent = `${session.hoTen || session.email} · ${session.role === 'admin' ? 'Admin' : 'HRBP'}`;
+  if (session.role === 'admin') document.getElementById('adminLink').style.display = 'inline-block';
+  await loadQuarters();
+  await loadAll();
+})();
+</script>
+</body>
+</html>

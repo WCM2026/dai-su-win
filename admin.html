@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin panel · Đại sứ WIN</title>
+<style>
+  :root { --navy:#1a2f6b; --navy2:#0f1d47; --gold:#f4b73f; --red:#d1362f; --bg:#f6f7fb; --ink:#1c2333; --muted:#6b7280; }
+  * { box-sizing:border-box; }
+  body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); margin:0; color:var(--ink); }
+  .topbar { background:linear-gradient(135deg,var(--navy),var(--navy2)); color:#fff; padding:18px 28px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+  .brand .eyebrow { color:var(--gold); font-size:11px; letter-spacing:.08em; text-transform:uppercase; }
+  .brand b { font-size:17px; }
+  .controls { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .who { background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.3); border-radius:8px; padding:8px 12px; font-size:13px; }
+  .navbtn { background:none; border:1px solid rgba(255,255,255,.4); color:#fff; padding:8px 14px; border-radius:8px; cursor:pointer; font-size:13px; text-decoration:none; }
+  .wrap { max-width:1100px; margin:0 auto; padding:24px 28px 60px; }
+  .denied { background:#fdeceb; color:#b0271e; padding:16px 20px; border-radius:10px; margin-bottom:20px; }
+  .hidden { display:none !important; }
+
+  .tabs { display:flex; gap:8px; margin-bottom:18px; border-bottom:1px solid #e0e3ec; }
+  .tab { padding:10px 6px; font-size:14px; font-weight:600; color:var(--muted); cursor:pointer; border-bottom:2px solid transparent; }
+  .tab.active { color:var(--navy); border-color:var(--red); }
+  .tabpage { display:none; } .tabpage.active { display:block; }
+
+  .panel { background:#fff; border-radius:14px; padding:20px 22px; margin-bottom:20px; box-shadow:0 1px 3px rgba(0,0,0,.06); }
+  .panel-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:10px; }
+  .panel-head h2 { font-size:15px; color:var(--navy); margin:0; }
+  .scope-note { font-size:12px; color:var(--muted); }
+
+  .qtag { background:#eef0f6; padding:8px 14px; border-radius:20px; font-size:13px; display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+  .qtag button { background:none; border:none; color:var(--red); cursor:pointer; font-weight:700; font-size:14px; }
+  .list-wrap { display:flex; flex-direction:column; gap:2px; margin-bottom:16px; }
+
+  .add-row { display:flex; gap:8px; flex-wrap:wrap; }
+  .add-row input, .add-row select { padding:9px 12px; border:1px solid #dde1ea; border-radius:8px; font-size:13px; }
+  .btn { background:var(--red); color:#fff; border:none; padding:9px 18px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; }
+  .btn.secondary { background:var(--navy); }
+
+  table { width:100%; border-collapse:collapse; }
+  th, td { text-align:left; padding:9px 12px; font-size:13px; border-bottom:1px solid #eef0f6; }
+  th { background:#f8f9fc; color:var(--navy); font-weight:600; font-size:11px; text-transform:uppercase; }
+  .zero-row { background:#fdeceb; }
+  .zero-row td:first-child::before { content:'⚠️ '; }
+  .num { font-weight:700; }
+  .loading { text-align:center; padding:24px; color:var(--muted); }
+  .quarter-select { padding:8px 12px; border:1px solid #dde1ea; border-radius:8px; font-size:13px; margin-bottom:14px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand"><div class="eyebrow">WinCommerce</div><b>⚙️ Admin panel — Đại sứ WIN</b></div>
+  <div class="controls">
+    <span class="who" id="whoami">...</span>
+    <a href="dashboard.html" class="navbtn">← Về Dashboard</a>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="denied hidden" id="deniedBox">Bạn không có quyền truy cập trang này. Chỉ Admin mới xem được Admin panel.</div>
+
+  <div id="content" class="hidden">
+    <div class="tabs">
+      <div class="tab active" data-tab="quarters">Quản lý Quý</div>
+      <div class="tab" data-tab="users">Phân quyền HRBP</div>
+      <div class="tab" data-tab="deptstats">Thống kê theo Khối/Phòng</div>
+    </div>
+
+    <!-- Tab 1: Quản lý Quý -->
+    <div class="tabpage active" id="tab-quarters">
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Các Quý đăng ký</h2>
+          <div style="display:flex;gap:8px;">
+            <a class="btn secondary" style="text-decoration:none;" id="sheetLinkQuarters" target="_blank">📄 Mở trong Google Sheet</a>
+            <button class="btn" id="exportBtn">⬇ Xuất báo cáo (.csv)</button>
+          </div>
+        </div>
+        <div class="list-wrap" id="quarterList"><div class="loading">Đang tải...</div></div>
+        <div class="add-row">
+          <div>
+            <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;">Tên Quý</label>
+            <input id="newQuarterName" placeholder="VD: Quý III - 2026" style="min-width:200px;">
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;">🅑1 Hạn đơn vị đề cử</label>
+            <input id="newHan1" type="date">
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;">🅑2 Hạn HRBP tổng hợp</label>
+            <input id="newHan2" type="date">
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;">🅑3 Hạn phê duyệt & vinh danh</label>
+            <input id="newHan3" type="date">
+          </div>
+          <button class="btn secondary" id="addQuarterBtn" style="align-self:flex-end;">+ Thêm Quý</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 2: Phân quyền HRBP -->
+    <div class="tabpage" id="tab-users">
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Người dùng được cấp quyền</h2>
+          <a class="btn secondary" style="text-decoration:none;" id="sheetLinkUsers" target="_blank">📄 Mở trong Google Sheet (sửa hàng loạt)</a>
+        </div>
+        <div class="scope-note" style="margin-bottom:12px;">HRBP chỉ xem/duyệt được đề cử thuộc phạm vi được gán. VD phạm vi: <code>SSC</code> hoặc <code>WinMart Miền Bắc</code> (nhiều phạm vi cách nhau bằng dấu phẩy, khớp với tên trong danh mục Khối/Phòng). Nếu cần thêm/sửa nhiều người cùng lúc, dùng nút "Mở trong Google Sheet" ở trên sẽ nhanh hơn.</div>
+        <div class="list-wrap" id="userList"><div class="loading">Đang tải...</div></div>
+        <div class="add-row">
+          <input id="newUserName" placeholder="Họ và tên" style="min-width:160px;">
+          <input id="newUserEmail" placeholder="Email" style="min-width:200px;">
+          <select id="newUserRole"><option value="hrbp">HRBP</option><option value="admin">Admin</option></select>
+          <input id="newUserScope" placeholder="Phạm vi phụ trách (VD: SSC)" style="min-width:200px;">
+          <button class="btn secondary" id="addUserBtn">+ Thêm người dùng</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 3: Thống kê Khối/Phòng -->
+    <div class="tabpage" id="tab-deptstats">
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Số lượng đề cử theo Khối/Phòng</h2>
+          <a class="btn secondary" style="text-decoration:none;" id="sheetLinkDepts" target="_blank">📄 Sửa danh mục Khối/Phòng trong Sheet</a>
+        </div>
+        <div class="scope-note" style="margin:-6px 0 10px;">Khối/Phòng tô đỏ = <b>chưa nộp đề cử</b> nào trong Quý này</div>
+        <select class="quarter-select" id="deptQuarterSelect"></select>
+        <table>
+          <thead><tr><th>Loại đơn vị</th><th>Khối / Phòng / Miền / Vùng</th><th>Số đề cử đã nộp</th><th>Đã vinh danh</th></tr></thead>
+          <tbody id="deptRows"><tr><td colspan="4" class="loading">Đang tải...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="api.js"></script>
+<script>
+const session = Session.requireLogin();
+
+if (session.role !== 'admin') {
+  document.getElementById('deniedBox').classList.remove('hidden');
+} else {
+  document.getElementById('content').classList.remove('hidden');
+  document.getElementById('whoami').textContent = `${session.hoTen || session.email} · Admin`;
+  init();
+}
+
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+  document.querySelectorAll('.tabpage').forEach(x => x.classList.remove('active'));
+  t.classList.add('active');
+  document.getElementById('tab-' + t.dataset.tab).classList.add('active');
+  if (t.dataset.tab === 'deptstats') loadDeptStats();
+});
+
+let ALL_QUARTERS = [];
+let currentQuarterForExport = 'all';
+function fmtDate(d) { if (!d) return '—'; const dt = new Date(d); return isNaN(dt) ? d : dt.toLocaleDateString('vi-VN'); }
+
+// ---------- Quarters ----------
+async function loadQuarters() {
+  const res = await Api.getQuarters();
+  ALL_QUARTERS = res.items;
+  document.getElementById('quarterList').innerHTML = res.items.map(q => {
+    const isActive = q.TrangThai === 'Active';
+    return `<div class="qtag" style="align-items:flex-start;flex-direction:column;gap:4px;${isActive ? 'border:1.5px solid #1e7e34;background:#e6f4ea;' : ''}">
+      <div style="display:flex;align-items:center;gap:10px;width:100%;">
+        <b style="font-size:14px;">${q.TenQuy}</b>
+        <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;${isActive ? 'background:#1e7e34;color:#fff;' : 'background:#e5e8f0;color:#6b7280;'}">${isActive ? '● ĐANG MỞ' : 'Đã đóng'}</span>
+        ${isActive ? '' : `<button class="btn secondary" style="padding:4px 12px;font-size:11px;" onclick="activateQuarter('${q.MaQuy}')">Kích hoạt</button>`}
+        <button onclick="removeQuarter('${q.MaQuy}')" style="margin-left:auto;">✕</button>
+      </div>
+      <div class="scope-note">
+        🅑1 Hạn đơn vị đề cử: <b>${fmtDate(q.HanB1_DonViDeCu)}</b> &nbsp;·&nbsp;
+        🅑2 Hạn HRBP tổng hợp: <b>${fmtDate(q.HanB2_HRBPTongHop)}</b> &nbsp;·&nbsp;
+        🅑3 Hạn phê duyệt & vinh danh: <b>${fmtDate(q.HanB3_PheDuyet)}</b>
+      </div>
+    </div>`;
+  }).join('');
+
+  const deptSel = document.getElementById('deptQuarterSelect');
+  deptSel.innerHTML = res.items.map(q => `<option value="${q.MaQuy}">${q.TenQuy}</option>`).join('') + '<option value="all">Tất cả các Quý</option>';
+  currentQuarterForExport = res.items.find(q => q.TrangThai === 'Active')?.MaQuy || (res.items[0] && res.items[0].MaQuy) || 'all';
+  deptSel.value = currentQuarterForExport;
+}
+async function removeQuarter(maQuy) {
+  if (!confirm('Xóa Quý này? Dữ liệu đề cử đã nộp sẽ không bị xóa.')) return;
+  await Api.removeQuarter(session.token, maQuy);
+  loadQuarters();
+}
+async function activateQuarter(maQuy) {
+  const res = await Api.setActiveQuarter(session.token, maQuy);
+  alert(res.message);
+  loadQuarters();
+}
+document.getElementById('addQuarterBtn').onclick = async () => {
+  const tenQuy = document.getElementById('newQuarterName').value.trim();
+  const h1 = document.getElementById('newHan1').value, h2 = document.getElementById('newHan2').value, h3 = document.getElementById('newHan3').value;
+  if (!tenQuy) return alert('Nhập tên Quý.');
+  const res = await Api.addQuarter(session.token, tenQuy, h1, h2, h3);
+  alert(res.message);
+  document.getElementById('newQuarterName').value = '';
+  loadQuarters();
+};
+document.getElementById('exportBtn').onclick = () => window.open(Api.exportCsvUrl(session.token, currentQuarterForExport), '_blank');
+
+// ---------- Users ----------
+async function loadUsers() {
+  const res = await Api.listUsers(session.token);
+  document.getElementById('userList').innerHTML = res.items.map(u => `
+    <div class="qtag">
+      <b>${u.HoTen || '(chưa có tên)'}</b> · ${u.Email} · ${u.Role === 'admin' ? 'Admin' : 'HRBP'} · ${u.PhamViPhuTrach || '—'} ${u.CoMatKhau ? '' : '<span style="color:#a9700f;">(chưa đăng nhập lần đầu)</span>'}
+      <button onclick="removeUser('${u.Email}')">✕</button>
+    </div>`).join('');
+}
+async function removeUser(email) {
+  if (!confirm(`Xóa quyền truy cập của ${email}?`)) return;
+  await Api.removeUser(session.token, email);
+  loadUsers();
+}
+document.getElementById('addUserBtn').onclick = async () => {
+  const hoTen = document.getElementById('newUserName').value.trim();
+  const email = document.getElementById('newUserEmail').value.trim();
+  const role = document.getElementById('newUserRole').value;
+  const phamVi = document.getElementById('newUserScope').value.trim() || (role === 'admin' ? 'ALL' : '');
+  if (!email || !hoTen) return alert('Nhập đầy đủ Họ tên và Email.');
+  const res = await Api.addUser(session.token, email, hoTen, role, phamVi);
+  alert(res.message);
+  document.getElementById('newUserName').value = ''; document.getElementById('newUserEmail').value = ''; document.getElementById('newUserScope').value = '';
+  loadUsers();
+};
+
+// ---------- Dept stats ----------
+async function loadDeptStats() {
+  const quy = document.getElementById('deptQuarterSelect').value;
+  const res = await Api.getDeptStats(session.token, quy);
+  if (!res.success) { document.getElementById('deptRows').innerHTML = `<tr><td colspan="4">${res.message}</td></tr>`; return; }
+  document.getElementById('deptRows').innerHTML = res.items.map(d => `
+    <tr class="${d.SoLuong === 0 ? 'zero-row' : ''}">
+      <td>${d.LoaiDonVi}</td><td>${d.TenKhoiPhong}</td>
+      <td class="num">${d.SoLuong}</td><td class="num">${d.DaVinhDanh}</td>
+    </tr>`).join('');
+}
+document.getElementById('deptQuarterSelect').addEventListener('change', loadDeptStats);
+
+async function init() {
+  document.getElementById('sheetLinkQuarters').href = SPREADSHEET_URL;
+  document.getElementById('sheetLinkUsers').href = SPREADSHEET_URL;
+  document.getElementById('sheetLinkDepts').href = SPREADSHEET_URL;
+  await loadQuarters();
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Đề cử Đại sứ WIN</title>
+<style>
+  :root { --navy:#1a2f6b; --navy2:#0f1d47; --gold:#f4b73f; --red:#d1362f; --bg:#f6f7fb; --ink:#1c2333; --muted:#6b7280; }
+  * { box-sizing: border-box; }
+  body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); margin:0; padding:24px; color:var(--ink); }
+  .wrap { max-width:720px; margin:0 auto; }
+  .header { background:linear-gradient(135deg,var(--navy),var(--navy2)); color:#fff; border-radius:14px; padding:28px 32px; margin-bottom:20px; }
+  .header .eyebrow { color:var(--gold); font-weight:600; letter-spacing:.08em; font-size:13px; text-transform:uppercase; }
+  .header h1 { margin:6px 0 4px; font-size:26px; }
+  .header p { margin:0; color:#c7cfe8; font-size:14px; }
+  .card { background:#fff; border-radius:14px; padding:24px 28px; margin-bottom:16px; box-shadow:0 1px 3px rgba(0,0,0,.06); }
+  .card h2 { font-size:15px; color:var(--navy); margin:0 0 16px; padding-bottom:10px; border-bottom:2px solid #eef0f6; }
+  label { display:block; font-size:13px; font-weight:600; margin-bottom:6px; }
+  .hint { font-size:12px; color:var(--muted); margin-top:-4px; margin-bottom:8px; }
+  input[type=text], input[type=date], select, textarea {
+    width:100%; padding:10px 12px; border:1px solid #dde1ea; border-radius:8px; font-size:14px; margin-bottom:16px; font-family:inherit;
+  }
+  textarea { min-height:90px; resize:vertical; }
+  .row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .core-values label.cv { display:flex; align-items:center; gap:8px; font-weight:400; font-size:13px; margin-bottom:8px; padding:8px 10px; background:#f8f9fc; border-radius:8px; }
+  .core-values input[type=checkbox] { width:16px; height:16px; margin:0; }
+  button { background:var(--red); color:#fff; border:none; padding:13px 28px; border-radius:8px; font-size:15px; font-weight:600; cursor:pointer; width:100%; }
+  button:disabled { opacity:.6; cursor:not-allowed; }
+  #status { margin-top:14px; padding:12px 14px; border-radius:8px; font-size:14px; display:none; }
+  #status.ok { background:#e6f4ea; color:#1e7e34; display:block; }
+  #status.err { background:#fdeceb; color:#b0271e; display:block; }
+  .file-preview { width:90px; height:90px; border-radius:8px; object-fit:cover; margin-top:8px; display:none; border:1px solid #dde1ea; }
+  .compress-note { font-size:12px; color:#1e7e34; margin-top:6px; display:none; }
+  .quarter-info { padding:12px 14px; border-radius:8px; font-size:14px; font-weight:600; }
+  .quarter-info.open { background:#e6f4ea; color:#1e7e34; }
+  .quarter-info.closed { background:#fdeceb; color:#b0271e; }
+
+  /* Modal xác nhận trước khi gửi */
+  .modal-overlay { position:fixed; inset:0; background:rgba(15,29,71,.55); display:flex; align-items:center; justify-content:center; padding:20px; z-index:100; }
+  .modal-overlay.hidden { display:none; }
+  .modal { background:#fff; border-radius:16px; max-width:640px; width:100%; max-height:88vh; overflow-y:auto; }
+  .modal-head { background:linear-gradient(135deg,var(--navy),var(--navy2)); color:#fff; padding:20px 26px; border-radius:16px 16px 0 0; }
+  .modal-head .eyebrow { color:var(--gold); font-size:11px; text-transform:uppercase; letter-spacing:.08em; }
+  .modal-head h3 { margin:4px 0 0; font-size:19px; }
+  .modal-body { padding:22px 26px; }
+  .review-grid dl { margin:0 0 18px; display:grid; grid-template-columns:150px 1fr; gap:8px 12px; font-size:13.5px; }
+  .review-grid dt { color:var(--muted); }
+  .review-grid dd { margin:0; font-weight:600; white-space:pre-wrap; }
+  .review-photo { width:100px; height:100px; border-radius:10px; object-fit:cover; border:1px solid #eef0f6; margin-bottom:14px; }
+  .review-section h4 { font-size:12px; text-transform:uppercase; letter-spacing:.05em; color:var(--navy); margin:0 0 6px; }
+  .review-section p { margin:0 0 14px; font-size:13.5px; line-height:1.6; white-space:pre-wrap; }
+  .review-actions { display:flex; gap:10px; margin-top:10px; }
+  .review-actions button { flex:1; }
+  .btn-ghost { background:#fff !important; color:var(--navy) !important; border:1px solid var(--navy) !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <div class="eyebrow">WinCommerce</div>
+    <h1>Đề cử Đại sứ WIN</h1>
+  </div>
+
+  <form id="nominationForm">
+    <div class="card" id="quarterCard">
+      <h2>Quý đang mở đăng ký</h2>
+      <div id="quarterInfo" class="quarter-info">Đang kiểm tra Quý đang mở...</div>
+    </div>
+
+    <div class="card">
+      <h2>1. Đơn vị đề xuất</h2>
+      <div class="row">
+        <div>
+          <label>Loại đơn vị</label>
+          <select id="loaiDonVi" required>
+            <option value="">-- Chọn --</option>
+            <option value="WinMart">WinMart</option>
+            <option value="MiniMart">MiniMart</option>
+            <option value="SSC">SSC</option>
+          </select>
+        </div>
+        <div>
+          <label>Miền / Vùng / Khối-Phòng</label>
+          <select id="mienVungKhoi" required><option value="">-- Chọn Loại đơn vị trước --</option></select>
+        </div>
+      </div>
+      <label>Khối/Bộ phận/Cơ sở</label>
+      <input type="text" id="tenDonVi" required>
+      <label>Đại diện CBLĐ đề xuất</label>
+      <div class="hint">Từ Rank 3 trở lên</div>
+      <input type="text" id="nguoiDeXuat" required>
+      <label>Email người đề xuất</label>
+      <input type="text" id="emailNguoiDeXuat" required>
+    </div>
+
+    <div class="card">
+      <h2>2. Thông tin ứng viên</h2>
+      <div class="row">
+        <div><label>Họ và tên</label><input type="text" id="hoTenUngVien" required></div>
+        <div><label>Mã số nhân viên</label><input type="text" id="maNV" required></div>
+      </div>
+      <div class="row">
+        <div><label>Chức danh</label><input type="text" id="chucDanh" required></div>
+        <div><label>Ngày vào Tập đoàn</label><input type="date" id="ngayVaoTapDoan" required></div>
+      </div>
+      <label>Ảnh chân dung</label>
+      <div class="hint">Yêu cầu ảnh rõ nét, tươi vui, nhìn rõ mặt. Ảnh sẽ được tự động nén xuống dưới ~2-4MB (giữ đủ nét để in poster/bảng tin), giữ nguyên tỉ lệ.</div>
+      <input type="file" id="anhChanDung" accept="image/*">
+      <img id="preview" class="file-preview">
+      <div id="compressNote" class="compress-note"></div>
+    </div>
+
+    <div class="card">
+      <h2>3. Câu chuyện Đại sứ</h2>
+      <label>Bối cảnh</label><textarea id="boiCanh" required></textarea>
+      <label>Hành động / đóng góp</label><textarea id="hanhDong" required></textarea>
+      <label>Kết quả nhận được</label><textarea id="ketQua" required></textarea>
+    </div>
+
+    <div class="card core-values">
+      <h2>4. Giá trị cốt lõi tương ứng</h2>
+      <label class="cv"><input type="checkbox" name="gtcl" value="WIN PHỤNG SỰ"> WIN PHỤNG SỰ — Kiên định với hành trình phụng sự người tiêu dùng</label>
+      <label class="cv"><input type="checkbox" name="gtcl" value="WIN SÁNG TẠO"> WIN SÁNG TẠO — Kiên định tạo ra giá trị chuyển đổi</label>
+      <label class="cv"><input type="checkbox" name="gtcl" value="WIN TỰ CHỦ"> WIN TỰ CHỦ — Kiên định với tinh thần doanh nhân</label>
+      <label class="cv"><input type="checkbox" name="gtcl" value="WIN KIÊN ĐỊNH"> WIN KIÊN ĐỊNH — Kiên định với tầm nhìn dài hạn</label>
+      <label class="cv"><input type="checkbox" name="gtcl" value="WIN KHÁT VỌNG"> WIN KHÁT VỌNG — Kiên định với mục tiêu lý tưởng</label>
+    </div>
+
+    <button type="submit" id="submitBtn">Xem lại & Gửi đề cử</button>
+    <div id="status"></div>
+  </form>
+</div>
+
+<!-- Modal xác nhận trước khi gửi -->
+<div class="modal-overlay hidden" id="reviewOverlay">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="eyebrow">Xác nhận thông tin</div>
+      <h3>Kiểm tra lại trước khi gửi đề cử</h3>
+    </div>
+    <div class="modal-body">
+      <img id="rPhoto" class="review-photo" style="display:none;">
+      <div class="review-grid">
+        <dl>
+          <dt>Quý đăng ký</dt><dd id="rQuy">—</dd>
+          <dt>Đơn vị</dt><dd id="rDonVi">—</dd>
+          <dt>Người đề xuất</dt><dd id="rNguoiDeXuat">—</dd>
+          <dt>Email người đề xuất</dt><dd id="rEmail">—</dd>
+          <dt>Ứng viên</dt><dd id="rUngVien">—</dd>
+          <dt>Mã số NV</dt><dd id="rMaNV">—</dd>
+          <dt>Chức danh</dt><dd id="rChucDanh">—</dd>
+          <dt>Ngày vào Tập đoàn</dt><dd id="rNgayVao">—</dd>
+          <dt>Giá trị cốt lõi</dt><dd id="rGtcl">—</dd>
+        </dl>
+      </div>
+      <div class="review-section"><h4>Bối cảnh</h4><p id="rBoiCanh">—</p></div>
+      <div class="review-section"><h4>Hành động / đóng góp</h4><p id="rHanhDong">—</p></div>
+      <div class="review-section"><h4>Kết quả nhận được</h4><p id="rKetQua">—</p></div>
+
+      <div class="review-actions">
+        <button class="btn-ghost" id="btnBackEdit">← Quay lại chỉnh sửa</button>
+        <button id="btnConfirmSubmit">✅ Xác nhận gửi đề cử</button>
+      </div>
+      <div id="reviewStatus"></div>
+    </div>
+  </div>
+</div>
+
+<script src="api.js"></script>
+<script>
+let imageBase64 = null;
+
+let activeQuarter = null; // { MaQuy, TenQuy, ... }
+
+// Tự động lấy Quý đang mở (do Admin kích hoạt) — không cho người nộp tự chọn
+Api.getActiveQuarter().then(res => {
+  const el = document.getElementById('quarterInfo');
+  const btn = document.getElementById('submitBtn');
+  if (res.success && res.item) {
+    activeQuarter = res.item;
+    el.className = 'quarter-info open';
+    el.textContent = `🟢 Đang nhận đề cử cho: ${res.item.TenQuy}`;
+  } else {
+    el.className = 'quarter-info closed';
+    el.textContent = '🔴 Hiện không có Quý nào đang mở đăng ký. Vui lòng liên hệ PTVH/Admin.';
+    btn.disabled = true;
+  }
+});
+
+// Nạp danh sách Miền/Vùng/Khối-Phòng theo Loại đơn vị đã chọn (theo danh mục chuẩn công ty)
+document.getElementById('loaiDonVi').addEventListener('change', async function(e) {
+  const sel = document.getElementById('mienVungKhoi');
+  const loaiDonVi = e.target.value;
+  if (!loaiDonVi) { sel.innerHTML = '<option value="">-- Chọn Loại đơn vị trước --</option>'; return; }
+  sel.innerHTML = '<option value="">Đang tải...</option>';
+  const res = await Api.getDeptList(loaiDonVi);
+  sel.innerHTML = res.items.length
+    ? '<option value="">-- Chọn --</option>' + res.items.map(d => `<option value="${d}">${d}</option>`).join('')
+    : '<option value="">Chưa có danh mục cho loại đơn vị này</option>';
+});
+
+document.getElementById('anhChanDung').addEventListener('change', async function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const note = document.getElementById('compressNote');
+  note.style.display = 'block';
+  note.textContent = 'Đang nén ảnh...';
+  imageBase64 = await Api.compressImage(file);
+  const preview = document.getElementById('preview');
+  preview.src = imageBase64;
+  preview.style.display = 'block';
+  const sizeKB = Math.round((imageBase64.length * 0.75) / 1024);
+  note.textContent = `✓ Đã nén ảnh xuống còn ~${sizeKB}KB`;
+});
+
+function collectFields() {
+  const giaTriCotLoi = Array.from(document.querySelectorAll('input[name=gtcl]:checked')).map(el => el.value).join(', ');
+  return {
+    quy: activeQuarter ? activeQuarter.MaQuy : '',
+    loaiDonVi: document.getElementById('loaiDonVi').value,
+    mienVungKhoi: document.getElementById('mienVungKhoi').value,
+    tenDonVi: document.getElementById('tenDonVi').value,
+    nguoiDeXuat: document.getElementById('nguoiDeXuat').value,
+    emailNguoiDeXuat: document.getElementById('emailNguoiDeXuat').value,
+    hoTenUngVien: document.getElementById('hoTenUngVien').value,
+    maNV: document.getElementById('maNV').value,
+    chucDanh: document.getElementById('chucDanh').value,
+    ngayVaoTapDoan: document.getElementById('ngayVaoTapDoan').value,
+    imageBase64: imageBase64 || '',
+    cauChuyen: JSON.stringify({
+      boiCanh: document.getElementById('boiCanh').value,
+      hanhDong: document.getElementById('hanhDong').value,
+      ketQua: document.getElementById('ketQua').value
+    }),
+    giaTriCotLoi
+  };
+}
+
+function openReview(fields) {
+  document.getElementById('rQuy').textContent = activeQuarter ? activeQuarter.TenQuy : '—';
+  document.getElementById('rDonVi').textContent = `${fields.tenDonVi} (${fields.loaiDonVi} · ${fields.mienVungKhoi})`;
+  document.getElementById('rNguoiDeXuat').textContent = fields.nguoiDeXuat;
+  document.getElementById('rEmail').textContent = fields.emailNguoiDeXuat;
+  document.getElementById('rUngVien').textContent = fields.hoTenUngVien;
+  document.getElementById('rMaNV').textContent = fields.maNV;
+  document.getElementById('rChucDanh').textContent = fields.chucDanh;
+  document.getElementById('rNgayVao').textContent = fields.ngayVaoTapDoan ? new Date(fields.ngayVaoTapDoan).toLocaleDateString('vi-VN') : '—';
+  document.getElementById('rGtcl').textContent = fields.giaTriCotLoi || '(chưa chọn)';
+  const story = JSON.parse(fields.cauChuyen);
+  document.getElementById('rBoiCanh').textContent = story.boiCanh || '—';
+  document.getElementById('rHanhDong').textContent = story.hanhDong || '—';
+  document.getElementById('rKetQua').textContent = story.ketQua || '—';
+  const photo = document.getElementById('rPhoto');
+  if (fields.imageBase64) { photo.src = fields.imageBase64; photo.style.display = 'block'; } else { photo.style.display = 'none'; }
+  document.getElementById('reviewStatus').className = '';
+  document.getElementById('reviewStatus').textContent = '';
+  document.getElementById('btnConfirmSubmit').disabled = false;
+  document.getElementById('btnConfirmSubmit').textContent = '✅ Xác nhận gửi đề cử';
+  document.getElementById('btnConfirmSubmit').style.display = '';
+  document.getElementById('btnBackEdit').textContent = '← Quay lại chỉnh sửa';
+  document.getElementById('reviewOverlay').classList.remove('hidden');
+}
+
+document.getElementById('nominationForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  if (!activeQuarter) { alert('Hiện không có Quý nào đang mở đăng ký.'); return; }
+  openReview(collectFields());
+});
+
+document.getElementById('btnBackEdit').onclick = () => document.getElementById('reviewOverlay').classList.add('hidden');
+
+document.getElementById('btnConfirmSubmit').onclick = async () => {
+  const btn = document.getElementById('btnConfirmSubmit');
+  const reviewStatus = document.getElementById('reviewStatus');
+  btn.disabled = true;
+  btn.textContent = 'Đang gửi...';
+  try {
+    const res = await Api.submitNomination(collectFields());
+    reviewStatus.className = res.success ? 'ok' : 'err';
+    reviewStatus.textContent = res.message;
+    if (res.success) {
+      btn.style.display = 'none';
+      document.getElementById('btnBackEdit').textContent = 'Đóng';
+      document.getElementById('nominationForm').reset();
+      document.getElementById('preview').style.display = 'none';
+      document.getElementById('compressNote').style.display = 'none';
+      imageBase64 = null;
+    } else {
+      btn.disabled = false;
+      btn.textContent = '✅ Xác nhận gửi đề cử';
+    }
+  } catch (err) {
+    reviewStatus.className = 'err';
+    reviewStatus.textContent = 'Có lỗi xảy ra: ' + err.message;
+    btn.disabled = false;
+    btn.textContent = '✅ Xác nhận gửi đề cử';
+  }
+};
+</script>
+</body>
+</html>
