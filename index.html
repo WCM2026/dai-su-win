@@ -48,6 +48,7 @@
   .lookup-note { font-size:12px; margin-top:6px; margin-bottom:8px; display:none; }
   .lookup-note.ok { color:#1e7e34; display:block; }
   .lookup-note.err { color:#b0271e; display:block; }
+  .lookup-note.warn { color:#a9700f; display:block; font-weight:600; }
   .lookup-row { display:flex; gap:8px; align-items:flex-start; }
   .lookup-row input { margin-bottom:0; }
   .lookup-btn { width:auto; flex-shrink:0; background:var(--navy); padding:10px 16px; font-size:13px; white-space:nowrap; }
@@ -357,12 +358,18 @@ candidatesContainer.addEventListener('click', async (e) => {
     block._employeeInfo = null;
     renderEmployeeInfo(block, null);
     try {
-      const res = await Api.lookupEmployee(maNV);
+      const res = await Api.lookupEmployee(maNV, activeQuarter ? activeQuarter.MaQuy : '');
       if (res.success && res.item && res.item.hoTen) {
         block._employeeInfo = res.item;
         renderEmployeeInfo(block, res.item);
-        note.className = 'lookup-note ok';
-        note.textContent = `✓ Đã tìm thấy: ${res.item.hoTen}. Vui lòng kiểm tra lại thông tin.`;
+        const ex = res.item.existingNomination;
+        if (ex) {
+          note.className = 'lookup-note warn';
+          note.textContent = `⚠️ MSNV này đã được ${esc(ex.nguoiDeXuat) || 'một đơn vị'} (${esc(ex.tenDonVi) || '?'}) đề cử trong quý này — trạng thái hiện tại: ${esc(ex.trangThai) || '?'}. Vẫn có thể tiếp tục nếu bạn chắc chắn muốn đề cử lại.`;
+        } else {
+          note.className = 'lookup-note ok';
+          note.textContent = `✓ Đã tìm thấy: ${res.item.hoTen}. Vui lòng kiểm tra lại thông tin.`;
+        }
       } else {
         note.className = 'lookup-note err';
         note.textContent = (res.message || 'Không tìm thấy MSNV này.') + ' Vui lòng kiểm tra lại Mã số nhân viên và thử lại.';

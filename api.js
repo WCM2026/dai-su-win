@@ -32,11 +32,26 @@ function postForm(fields) {
     iframe.style.display = 'none';
     document.body.appendChild(iframe);
 
+    let settled = false;
+    let pollTimer = null;
+    let timeoutTimer = null;
+
+    function cleanup() {
+      window.removeEventListener('message', onMessage);
+      if (pollTimer) clearInterval(pollTimer);
+      if (timeoutTimer) clearTimeout(timeoutTimer);
+      setTimeout(() => iframe.remove(), 500);
+    }
+    function finish(result) {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      resolve(result);
+    }
+
     function onMessage(e) {
       // Không kiểm tra e.origin vì response tới từ script.google.com, domain có thể thay đổi theo deployment
-      window.removeEventListener('message', onMessage);
-      resolve(e.data);
-      setTimeout(() => iframe.remove(), 500);
+      finish(e.data);
     }
     window.addEventListener('message', onMessage);
 
@@ -55,7 +70,33 @@ function postForm(fields) {
     form.submit();
     form.remove();
 
-    setTimeout(() => { window.removeEventListener('message', onMessage); reject(new Error('Hết thời gian chờ phản hồi từ hệ thống.')); }, 90000);
+    // DỰ PHÒNG: cầu nối postMessage qua iframe ẩn đôi khi không đáng tin cậy (tùy trình duyệt/mạng),
+    // dù backend đã ghi dữ liệu thành công. Nếu request có clientKey, chủ động hỏi lại server bằng
+    // JSONP (kênh GET đơn giản, đã chứng minh hoạt động ổn định) để xác nhận độc lập — không cần
+    // chờ postMessage nữa nếu đã xác nhận được dòng dữ liệu tồn tại.
+    if (fields && fields.clientKey) {
+      let attempts = 0;
+      const maxAttempts = 10;
+      pollTimer = setInterval(async () => {
+        if (settled) return;
+        attempts++;
+        try {
+          const res = await jsonp('checkClientKey', { clientKey: fields.clientKey });
+          if (res && res.found) {
+            finish({ success: true, message: 'Đã nộp đề cử thành công!' });
+            return;
+          }
+        } catch (err) { /* bỏ qua, thử lại ở lần poll kế tiếp */ }
+        if (attempts >= maxAttempts) clearInterval(pollTimer);
+      }, 4000);
+    }
+
+    timeoutTimer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      reject(new Error('Hết thời gian chờ phản hồi từ hệ thống.'));
+    }, 90000);
   });
 }
 
@@ -117,7 +158,8 @@ const Api = {
   getDeptStats: (token, quy) => jsonp('deptStats', { token, quy: quy || 'all' }),
 
   // Tra cứu nhân sự theo MSNV (sheet DSNS)
-  lookupEmployee: (maNV) => jsonp('lookupEmployee', { maNV }),
+  lookupEmployee: (maNV, quy) => jsonp('lookupEmployee', { maNV, quy: quy || '' }),
+  checkClientKey: (clientKey) => jsonp('checkClientKey', { clientKey }),
 
   // Export
   exportCsvUrl: (token, quy) => `${WEBAPP_URL}?action=exportCsv&token=${token}&quy=${quy || 'all'}`,
