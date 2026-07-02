@@ -291,9 +291,15 @@ function refreshCandidateUI() {
   addBtn.textContent = candidateCount >= MAX_CANDIDATES ? 'Đã đạt tối đa 3 ứng viên trong 1 lượt gửi' : '+ Thêm ứng viên (tối đa 3)';
 }
 
+function makeClientKey() {
+  return 'ck_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+}
+
 function addCandidate() {
   if (candidateCount >= MAX_CANDIDATES) return;
-  document.getElementById('candidatesContainer').insertAdjacentHTML('beforeend', candidateBlockHtml());
+  const container = document.getElementById('candidatesContainer');
+  container.insertAdjacentHTML('beforeend', candidateBlockHtml());
+  container.lastElementChild._clientKey = makeClientKey();
   candidateCount++;
   refreshCandidateUI();
 }
@@ -416,12 +422,14 @@ function collectSharedFields() {
 function collectCandidates() {
   return Array.from(document.querySelectorAll('.candidate-block')).map(block => {
     const info = block._employeeInfo || {};
+    if (!block._clientKey) block._clientKey = makeClientKey();
     return {
       hoTenUngVien: info.hoTen || '',
       maNV: block.querySelector('[data-field="maNV"]').value.trim(),
       chucDanh: info.chucDanh || '',
       ngayVaoTapDoan: info.ngayVaoTapDoan || '',
       imageBase64: block._imageBase64 || '',
+      clientKey: block._clientKey,
       cauChuyen: JSON.stringify({
         boiCanh: block.querySelector('[data-field="boiCanh"]').value,
         hanhDong: block.querySelector('[data-field="hanhDong"]').value,
