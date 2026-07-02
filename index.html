@@ -40,7 +40,7 @@
   .logo-badge { display:inline-flex; align-items:center; background:#fff; border-radius:8px; padding:5px 12px; }
   .logo-badge img { height:20px; display:block; }
   .dsw-logo { display:inline-flex; align-items:center; }
-  .dsw-logo img { height:34px; display:block; }
+  .dsw-logo img { height:56px; display:block; }
   .candidate-block { border:1.5px solid #eef0f6; border-radius:14px; padding:18px 20px; margin-bottom:16px; position:relative; }
   .candidate-block-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
   .candidate-block-head h3 { margin:0; font-size:14px; color:var(--navy); }
@@ -68,22 +68,34 @@
   /* Modal xác nhận trước khi gửi */
   .modal-overlay { position:fixed; inset:0; background:rgba(15,29,71,.55); display:flex; align-items:center; justify-content:center; padding:20px; z-index:100; }
   .modal-overlay.hidden { display:none; }
-  .modal { background:#fff; border-radius:16px; max-width:640px; width:100%; max-height:88vh; overflow-y:auto; }
-  .modal-head { background:linear-gradient(135deg,var(--navy),var(--navy2)); color:#fff; padding:20px 26px; border-radius:16px 16px 0 0; }
+  .modal { background:#fff; border-radius:18px; max-width:720px; width:100%; max-height:90vh; overflow-y:auto; }
+  .modal-head { background:linear-gradient(135deg,var(--navy),var(--navy2)); color:#fff; padding:22px 28px; border-radius:18px 18px 0 0; border-bottom:3px solid var(--gold); }
   .modal-head .eyebrow { color:var(--gold); font-size:11px; text-transform:uppercase; letter-spacing:.08em; }
   .modal-head h3 { margin:4px 0 0; font-size:19px; }
-  .modal-body { padding:22px 26px; }
+  .modal-body { padding:24px 28px; }
   .review-grid dl { margin:0 0 18px; display:grid; grid-template-columns:150px 1fr; gap:8px 12px; font-size:13.5px; }
   .review-grid dt { color:var(--muted); }
   .review-grid dd { margin:0; font-weight:600; white-space:pre-wrap; }
-  .review-photo { width:100px; height:100px; border-radius:10px; object-fit:cover; border:1px solid #eef0f6; margin-bottom:14px; }
   .review-section h4 { font-size:12px; text-transform:uppercase; letter-spacing:.05em; color:var(--navy); margin:0 0 6px; }
   .review-section p { margin:0 0 14px; font-size:13.5px; line-height:1.6; white-space:pre-wrap; }
   .review-actions { display:flex; gap:10px; margin-top:10px; }
   .review-actions button { flex:1; }
   .btn-ghost { background:#fff !important; color:var(--navy) !important; border:1px solid var(--navy) !important; }
-  .review-candidate { border-top:2px solid #eef0f6; margin-top:18px; padding-top:16px; }
-  .review-candidate h4.rc-title { color:var(--navy); font-size:13px; text-transform:uppercase; letter-spacing:.05em; margin:0 0 10px; }
+
+  .review-candidate { background:#f8f9fc; border:1px solid #eef0f6; border-radius:16px; padding:20px 22px; margin-top:18px; }
+  .review-candidate:first-of-type { margin-top:0; }
+  .rc-badge { display:inline-block; background:var(--navy); color:#fff; font-size:11px; font-weight:700; padding:4px 12px; border-radius:20px; text-transform:uppercase; letter-spacing:.05em; margin-bottom:12px; }
+  .rc-top { display:flex; gap:20px; align-items:flex-start; margin-bottom:16px; }
+  .rc-photo { width:132px; height:132px; border-radius:14px; object-fit:cover; border:1px solid #e5e8f0; flex-shrink:0; background:#eef0f6; }
+  .rc-photo-placeholder { width:132px; height:132px; border-radius:14px; flex-shrink:0; background:#eef0f6; color:var(--muted); font-size:11.5px; display:flex; align-items:center; justify-content:center; text-align:center; padding:8px; }
+  .rc-info { flex:1; min-width:0; }
+  .rc-name { margin:0 0 12px; font-size:21px; font-weight:800; color:var(--ink); line-height:1.25; }
+  .rc-meta { margin:0; display:grid; grid-template-columns:auto 1fr; gap:7px 14px; font-size:13.5px; }
+  .rc-meta dt { color:var(--muted); }
+  .rc-meta dd { margin:0; font-weight:600; }
+  .rc-values { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:4px; }
+  .rc-values .cv-tag { background:#fff; border:1px solid #dde1ea; color:var(--navy); font-size:11.5px; font-weight:700; padding:5px 12px; border-radius:20px; }
+  .review-candidate .review-section:last-child p { margin-bottom:0; }
 </style>
 </head>
 <body>
@@ -428,16 +440,25 @@ function openReview(shared, candidates) {
 
   document.getElementById('rCandidates').innerHTML = candidates.map((c, i) => {
     const story = JSON.parse(c.cauChuyen);
+    const photoHtml = c.imageBase64
+      ? `<img src="${c.imageBase64}" class="rc-photo">`
+      : `<div class="rc-photo-placeholder">Không có ảnh</div>`;
+    const valueTags = (c.giaTriCotLoi || '').split(',').map(v => v.trim()).filter(Boolean)
+      .map(v => `<span class="cv-tag">${esc(v)}</span>`).join('') || '<span style="color:var(--muted);font-size:12.5px;">(chưa chọn giá trị cốt lõi)</span>';
     return `<div class="review-candidate">
-      <h4 class="rc-title">Ứng viên ${i + 1}</h4>
-      ${c.imageBase64 ? `<img src="${c.imageBase64}" class="review-photo">` : ''}
-      <div class="review-grid"><dl>
-        <dt>Ứng viên</dt><dd>${esc(c.hoTenUngVien) || '—'}</dd>
-        <dt>Mã số NV</dt><dd>${esc(c.maNV) || '—'}</dd>
-        <dt>Chức danh</dt><dd>${esc(c.chucDanh) || '—'}</dd>
-        <dt>Ngày vào Tập đoàn</dt><dd>${c.ngayVaoTapDoan ? new Date(c.ngayVaoTapDoan).toLocaleDateString('vi-VN') : '—'}</dd>
-        <dt>Giá trị cốt lõi</dt><dd>${esc(c.giaTriCotLoi) || '(chưa chọn)'}</dd>
-      </dl></div>
+      <span class="rc-badge">Ứng viên ${i + 1}</span>
+      <div class="rc-top">
+        ${photoHtml}
+        <div class="rc-info">
+          <h4 class="rc-name">${esc(c.hoTenUngVien) || '(chưa có tên)'}</h4>
+          <dl class="rc-meta">
+            <dt>Mã số NV</dt><dd>${esc(c.maNV) || '—'}</dd>
+            <dt>Chức danh</dt><dd>${esc(c.chucDanh) || '—'}</dd>
+            <dt>Ngày vào Tập đoàn</dt><dd>${c.ngayVaoTapDoan ? new Date(c.ngayVaoTapDoan).toLocaleDateString('vi-VN') : '—'}</dd>
+          </dl>
+        </div>
+      </div>
+      <div class="rc-values">${valueTags}</div>
       <div class="review-section"><h4>Bối cảnh</h4><p>${esc(story.boiCanh) || '—'}</p></div>
       <div class="review-section"><h4>Hành động / đóng góp</h4><p>${esc(story.hanhDong) || '—'}</p></div>
       <div class="review-section"><h4>Kết quả nhận được</h4><p>${esc(story.ketQua) || '—'}</p></div>
