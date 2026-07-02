@@ -51,6 +51,11 @@
   .lookup-row { display:flex; gap:8px; align-items:flex-start; }
   .lookup-row input { margin-bottom:0; }
   .lookup-btn { width:auto; flex-shrink:0; background:var(--navy); padding:10px 16px; font-size:13px; white-space:nowrap; }
+  .employee-info { border:1px solid #dde1ea; border-radius:8px; padding:10px 12px; font-size:13px; min-height:44px; background:#fafbfd; display:flex; align-items:center; }
+  .employee-info-empty { color:var(--muted); font-size:12.5px; }
+  .employee-info dl { margin:0; display:grid; grid-template-columns:auto 1fr; gap:4px 10px; font-size:13px; width:100%; }
+  .employee-info dt { color:var(--muted); }
+  .employee-info dd { margin:0; font-weight:600; }
   .add-candidate-btn { background:#fff; color:var(--navy); border:1.5px dashed var(--navy); padding:12px; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; width:100%; margin-bottom:16px; }
   .add-candidate-btn:disabled { opacity:.5; cursor:not-allowed; }
   .candidates-hint { font-size:12px; color:var(--muted); margin:-4px 0 14px; }
@@ -86,7 +91,7 @@
   <div class="header">
     <div class="header-top">
       <div class="logo-badge"><img src="https://datax-talent.basecdn.net/winmart/logo.png" alt="WinCommerce"></div>
-      <div class="dsw-logo"><img src="https://s3.hn-2.cloud.cmctelecom.vn/rop/prod/UploadFile/2026/07/02/20260702133256873606c24bef.png" alt="Đại sứ WIN"></div>
+      <div class="dsw-logo"><img src="https://s3.hn-2.cloud.cmctelecom.vn/rop/prod/UploadFile/2026/07/02/2026070214080186231910f253.png" alt="Đại sứ WIN"></div>
     </div>
     <h1>Đề cử Đại sứ WIN</h1>
   </div>
@@ -125,7 +130,7 @@
 
     <div class="card">
       <h2>2-4. Ứng viên đề cử</h2>
-      <div class="candidates-hint">Có thể đề cử tối đa 3 ứng viên trong 1 lượt gửi — mỗi ứng viên sẽ được HRBP xem xét độc lập. Nhập Mã số nhân viên trước để hệ thống tự động tra cứu Họ tên / Chức danh / Ngày vào Tập đoàn.</div>
+      <div class="candidates-hint">Có thể đề cử tối đa 3 ứng viên trong 1 lượt gửi — mỗi ứng viên sẽ được HRBP xem xét độc lập. Nhập Mã số nhân viên và bấm <b>Tìm</b> để hệ thống tự động hiển thị Họ tên / Chức danh / Ngày vào Tập đoàn (không thể tự nhập).</div>
       <div id="candidatesContainer"></div>
       <button type="button" class="add-candidate-btn" id="addCandidateBtn">+ Thêm ứng viên (tối đa 3)</button>
     </div>
@@ -237,11 +242,10 @@ function candidateBlockHtml() {
         </div>
         <div class="lookup-note" data-field="lookupNote"></div>
       </div>
-      <div><label>Họ và tên</label><input type="text" data-field="hoTenUngVien" required></div>
-    </div>
-    <div class="row">
-      <div><label>Chức danh</label><input type="text" data-field="chucDanh" required></div>
-      <div><label>Ngày vào Tập đoàn</label><input type="date" data-field="ngayVaoTapDoan" required></div>
+      <div>
+        <label>Thông tin nhân viên</label>
+        <div class="employee-info" data-field="employeeInfo"><div class="employee-info-empty">Nhập MSNV và bấm Tìm để hiển thị thông tin.</div></div>
+      </div>
     </div>
     <label>Ảnh chân dung</label>
     <div class="hint">Yêu cầu ảnh rõ nét, tươi vui, nhìn rõ mặt. Ảnh sẽ được tự động nén xuống dưới ~2-4MB (giữ đủ nét để in poster/bảng tin), giữ nguyên tỉ lệ.</div>
@@ -287,6 +291,19 @@ addCandidate(); // bắt đầu với 1 ứng viên
 
 const candidatesContainer = document.getElementById('candidatesContainer');
 
+function renderEmployeeInfo(block, info) {
+  const el = block.querySelector('[data-field="employeeInfo"]');
+  if (info && info.hoTen) {
+    el.innerHTML = `<dl>
+      <dt>Họ và tên</dt><dd>${esc(info.hoTen)}</dd>
+      <dt>Chức danh</dt><dd>${esc(info.chucDanh) || '—'}</dd>
+      <dt>Ngày vào Tập đoàn</dt><dd>${info.ngayVaoTapDoan ? new Date(info.ngayVaoTapDoan).toLocaleDateString('vi-VN') : '—'}</dd>
+    </dl>`;
+  } else {
+    el.innerHTML = '<div class="employee-info-empty">Nhập MSNV và bấm Tìm để hiển thị thông tin.</div>';
+  }
+}
+
 candidatesContainer.addEventListener('click', async (e) => {
   const action = e.target.dataset.action;
   if (!action) return;
@@ -319,25 +336,38 @@ candidatesContainer.addEventListener('click', async (e) => {
     btn.textContent = 'Đang tìm...';
     note.className = 'lookup-note';
     note.textContent = 'Đang tra cứu MSNV...';
+    block._employeeInfo = null;
+    renderEmployeeInfo(block, null);
     try {
       const res = await Api.lookupEmployee(maNV);
-      if (res.success) {
-        block.querySelector('[data-field="hoTenUngVien"]').value = res.item.hoTen || '';
-        block.querySelector('[data-field="chucDanh"]').value = res.item.chucDanh || '';
-        if (res.item.ngayVaoTapDoan) block.querySelector('[data-field="ngayVaoTapDoan"]').value = res.item.ngayVaoTapDoan;
+      if (res.success && res.item && res.item.hoTen) {
+        block._employeeInfo = res.item;
+        renderEmployeeInfo(block, res.item);
         note.className = 'lookup-note ok';
-        note.textContent = `✓ Đã tìm thấy: ${res.item.hoTen || '(chưa có tên)'}. Vui lòng kiểm tra lại thông tin.`;
+        note.textContent = `✓ Đã tìm thấy: ${res.item.hoTen}. Vui lòng kiểm tra lại thông tin.`;
       } else {
         note.className = 'lookup-note err';
-        note.textContent = `${res.message} Vui lòng nhập tay thông tin ứng viên.`;
+        note.textContent = (res.message || 'Không tìm thấy MSNV này.') + ' Vui lòng kiểm tra lại Mã số nhân viên và thử lại.';
       }
     } catch (err) {
       note.className = 'lookup-note err';
-      note.textContent = 'Không tra cứu được lúc này (có thể do hệ thống chưa cập nhật phiên bản mới nhất). Vui lòng nhập tay thông tin ứng viên.';
+      note.textContent = 'Không tra cứu được lúc này (có thể do hệ thống chưa cập nhật phiên bản mới nhất). Vui lòng thử lại.';
     } finally {
       btn.disabled = false;
       btn.textContent = originalText;
     }
+  }
+});
+
+// Nếu người dùng sửa lại MSNV sau khi đã tra cứu, xóa thông tin cũ để tránh gửi nhầm nhân sự
+candidatesContainer.addEventListener('input', (e) => {
+  if (e.target.dataset.field !== 'maNV') return;
+  const block = e.target.closest('.candidate-block');
+  if (block._employeeInfo) {
+    block._employeeInfo = null;
+    renderEmployeeInfo(block, null);
+    const note = block.querySelector('[data-field="lookupNote"]');
+    note.style.display = 'none';
   }
 });
 
@@ -372,19 +402,22 @@ function collectSharedFields() {
 }
 
 function collectCandidates() {
-  return Array.from(document.querySelectorAll('.candidate-block')).map(block => ({
-    hoTenUngVien: block.querySelector('[data-field="hoTenUngVien"]').value,
-    maNV: block.querySelector('[data-field="maNV"]').value,
-    chucDanh: block.querySelector('[data-field="chucDanh"]').value,
-    ngayVaoTapDoan: block.querySelector('[data-field="ngayVaoTapDoan"]').value,
-    imageBase64: block._imageBase64 || '',
-    cauChuyen: JSON.stringify({
-      boiCanh: block.querySelector('[data-field="boiCanh"]').value,
-      hanhDong: block.querySelector('[data-field="hanhDong"]').value,
-      ketQua: block.querySelector('[data-field="ketQua"]').value
-    }),
-    giaTriCotLoi: Array.from(block.querySelectorAll('[data-field="gtcl"]:checked')).map(el => el.value).join(', ')
-  }));
+  return Array.from(document.querySelectorAll('.candidate-block')).map(block => {
+    const info = block._employeeInfo || {};
+    return {
+      hoTenUngVien: info.hoTen || '',
+      maNV: block.querySelector('[data-field="maNV"]').value.trim(),
+      chucDanh: info.chucDanh || '',
+      ngayVaoTapDoan: info.ngayVaoTapDoan || '',
+      imageBase64: block._imageBase64 || '',
+      cauChuyen: JSON.stringify({
+        boiCanh: block.querySelector('[data-field="boiCanh"]').value,
+        hanhDong: block.querySelector('[data-field="hanhDong"]').value,
+        ketQua: block.querySelector('[data-field="ketQua"]').value
+      }),
+      giaTriCotLoi: Array.from(block.querySelectorAll('[data-field="gtcl"]:checked')).map(el => el.value).join(', ')
+    };
+  });
 }
 
 function openReview(shared, candidates) {
@@ -423,9 +456,14 @@ function openReview(shared, candidates) {
 document.getElementById('nominationForm').addEventListener('submit', function(e) {
   e.preventDefault();
   if (!activeQuarter) { alert('Hiện không có Quý nào đang mở đăng ký.'); return; }
-  const candidates = collectCandidates();
-  if (!candidates.length) { alert('Vui lòng thêm ít nhất 1 ứng viên.'); return; }
-  openReview(collectSharedFields(), candidates);
+  const blocks = Array.from(document.querySelectorAll('.candidate-block'));
+  if (!blocks.length) { alert('Vui lòng thêm ít nhất 1 ứng viên.'); return; }
+  const missing = blocks.findIndex(b => !b._employeeInfo || !b._employeeInfo.hoTen);
+  if (missing !== -1) {
+    alert(`Vui lòng tra cứu MSNV thành công cho Ứng viên ${missing + 1} trước khi gửi đề cử.`);
+    return;
+  }
+  openReview(collectSharedFields(), collectCandidates());
 });
 
 document.getElementById('btnBackEdit').onclick = () => document.getElementById('reviewOverlay').classList.add('hidden');
