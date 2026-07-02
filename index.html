@@ -151,6 +151,7 @@
     <button type="submit" id="submitBtn">Xem lại & Gửi đề cử</button>
     <div id="status"></div>
   </form>
+  <div style="text-align:center;font-size:10.5px;color:#9aa1b0;margin-top:18px;">Phiên bản backend: <span id="backendVersion">đang kiểm tra...</span></div>
 </div>
 
 <!-- Modal xác nhận trước khi gửi -->
@@ -191,6 +192,13 @@ function esc(s) {
 }
 
 // Tự động lấy Quý đang mở (do Admin kích hoạt) — không cho người nộp tự chọn
+// Hiển thị version backend để dễ đối chiếu khi nghi ngờ deployment chưa cập nhật code mới nhất
+Api.getVersion().then(res => {
+  const el = document.getElementById('backendVersion');
+  if (res && res.success) { el.textContent = res.version; }
+  else { el.textContent = '(không lấy được — có thể do lỗi kết nối)'; }
+}).catch(() => { document.getElementById('backendVersion').textContent = '(không kết nối được tới backend)'; });
+
 Api.getActiveQuarter().then(res => {
   const el = document.getElementById('quarterInfo');
   const btn = document.getElementById('submitBtn');
@@ -515,9 +523,13 @@ document.getElementById('btnConfirmSubmit').onclick = async () => {
   const errors = [];
 
   for (let i = 0; i < candidates.length; i++) {
-    btn.textContent = candidates.length > 1 ? `Đang gửi ứng viên ${i + 1}/${candidates.length}...` : 'Đang gửi...';
+    const baseLabel = candidates.length > 1 ? `Đang gửi ứng viên ${i + 1}/${candidates.length}` : 'Đang gửi';
+    btn.textContent = baseLabel + '...';
     try {
-      const res = await Api.submitNomination(Object.assign({}, shared, candidates[i]));
+      const res = await Api.submitNomination(
+        Object.assign({}, shared, candidates[i]),
+        (attempt, max) => { btn.textContent = `${baseLabel} — đang xác nhận với hệ thống (${attempt}/${max})...`; }
+      );
       if (res.success) successCount++;
       else errors.push(`Ứng viên ${i + 1} (${candidates[i].hoTenUngVien || '—'}): ${res.message}`);
     } catch (err) {

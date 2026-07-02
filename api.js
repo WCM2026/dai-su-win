@@ -24,7 +24,7 @@ function jsonp(action, params = {}) {
 
 // ---- Form-POST qua iframe ẩn: dùng cho việc GHI dữ liệu lớn (nộp đề cử có ảnh) ----
 // Đây là submit form thật (browser navigation) nên không bị CORS chặn, không giới hạn độ dài URL.
-function postForm(fields) {
+function postForm(fields, onProgress) {
   return new Promise((resolve, reject) => {
     const frameName = `_frame_${Date.now()}`;
     const iframe = document.createElement('iframe');
@@ -80,6 +80,7 @@ function postForm(fields) {
       pollTimer = setInterval(async () => {
         if (settled) return;
         attempts++;
+        if (typeof onProgress === 'function') { try { onProgress(attempts, maxAttempts); } catch (e) {} }
         try {
           const res = await jsonp('checkClientKey', { clientKey: fields.clientKey });
           if (res && res.found) {
@@ -160,12 +161,13 @@ const Api = {
   // Tra cứu nhân sự theo MSNV (sheet DSNS)
   lookupEmployee: (maNV, quy) => jsonp('lookupEmployee', { maNV, quy: quy || '' }),
   checkClientKey: (clientKey) => jsonp('checkClientKey', { clientKey }),
+  getVersion: () => jsonp('version'),
 
   // Export
   exportCsvUrl: (token, quy) => `${WEBAPP_URL}?action=exportCsv&token=${token}&quy=${quy || 'all'}`,
 
   // Nộp đề cử (form-post, không phải JSONP)
-  submitNomination: (fields) => postForm(fields),
+  submitNomination: (fields, onProgress) => postForm(fields, onProgress),
   compressImage
 };
 
