@@ -196,7 +196,10 @@
             <dt>Trạng thái</dt><dd><span class="badge" id="mTrangThai">—</span></dd>
           </dl>
         </div>
-        <img class="portrait" id="mAnh" src="">
+        <div style="text-align:center;">
+          <img class="portrait" id="mAnh" src="">
+          <a id="mAnhLink" href="#" target="_blank" rel="noopener" style="display:none;font-size:11.5px;color:var(--navy);text-decoration:underline;margin-top:6px;">Xem ảnh gốc trên Drive ↗</a>
+        </div>
       </div>
 
       <div class="story-section"><h3>Bối cảnh</h3><p id="mBoiCanh">—</p></div>
@@ -338,13 +341,32 @@ document.getElementById('quarterSelect').addEventListener('change', (e) => { cur
 let currentDetailId = null;
 
 // Link "xem" thường của Drive (https://drive.google.com/file/d/ID/view...) KHÔNG dùng trực tiếp
-// làm src cho <img> được (chỉ mở được trang xem trước trong trình duyệt) — cần đổi sang dạng
-// nhúng được (uc?export=view&id=ID). Hàm này tự nhận diện ID dù link ở định dạng nào.
-function toEmbeddableDriveUrl(url) {
+// làm src cho <img> được. Ngay cả link "nhúng được" cũng không có định dạng nào chạy 100% ổn định
+// mọi lúc (Google ngày càng hạn chế hotlink ảnh từ Drive) — nên thử lần lượt vài định dạng khác
+// nhau, nếu tất cả đều lỗi thì ẩn ảnh và chỉ hiện link "Xem ảnh gốc" (luôn mở được vì đó là link
+// xem trực tiếp trên Drive, không phải nhúng).
+function extractDriveFileId(url) {
   if (!url) return '';
-  const m = String(url).match(/[-\w]{25,}/); // ID file Drive luôn là chuỗi dài (thường 33 ký tự)
-  if (!m) return url;
-  return `https://drive.google.com/uc?export=view&id=${m[0]}`;
+  const m = String(url).match(/[-\w]{25,}/); // ID file Drive luôn là chuỗi dài (thường 28-44 ký tự)
+  return m ? m[0] : '';
+}
+
+function driveImageCandidates(fileId) {
+  return [
+    `https://lh3.googleusercontent.com/d/${fileId}`,
+    `https://drive.google.com/thumbnail?id=${fileId}&sz=w1000`,
+    `https://drive.google.com/uc?export=view&id=${fileId}`
+  ];
+}
+
+function setImageWithFallback(img, candidates, onAllFailed) {
+  let idx = 0;
+  img.onerror = () => {
+    idx++;
+    if (idx >= candidates.length) { img.onerror = null; onAllFailed(); return; }
+    img.src = candidates[idx];
+  };
+  img.src = candidates[0];
 }
 
 async function openDetail(id) {
@@ -366,8 +388,21 @@ async function openDetail(id) {
   badge.textContent = it.TrangThai; badge.className = 'badge ' + badgeClass(it.TrangThai);
 
   const img = document.getElementById('mAnh');
-  if (it.AnhChanDungURL) { img.src = toEmbeddableDriveUrl(it.AnhChanDungURL); img.classList.remove('placeholder'); }
-  else { img.removeAttribute('src'); img.classList.add('placeholder'); img.alt = 'Không có ảnh'; }
+  const link = document.getElementById('mAnhLink');
+  const fileId = extractDriveFileId(it.AnhChanDungURL);
+  if (fileId) {
+    img.style.display = '';
+    img.classList.remove('placeholder');
+    setImageWithFallback(img, driveImageCandidates(fileId), () => {
+      img.style.display = 'none';
+      img.classList.add('placeholder');
+    });
+    link.href = `https://drive.google.com/file/d/${fileId}/view`;
+    link.style.display = 'inline-block';
+  } else {
+    img.removeAttribute('src'); img.classList.add('placeholder'); img.alt = 'Không có ảnh'; img.style.display = '';
+    link.style.display = 'none';
+  }
 
   document.getElementById('mBoiCanh').textContent = story.boiCanh || '—';
   document.getElementById('mHanhDong').textContent = story.hanhDong || '—';
