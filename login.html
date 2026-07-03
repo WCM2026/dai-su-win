@@ -11,16 +11,16 @@
   body {
     font-family:'Segoe UI',system-ui,sans-serif; margin:0; padding:20px;
     min-height:100vh; display:flex; align-items:center; justify-content:center;
-    background:linear-gradient(135deg,var(--navy),var(--navy2));
+    background:var(--bg);
     position:relative; overflow-x:hidden;
   }
-  /* Dải sóng xanh phía dưới nền, gợi ý từ backdrop poster */
+  /* Dải sóng xanh nhạt phía dưới nền, gợi ý từ backdrop poster */
   body::before {
     content:''; position:fixed; left:0; right:0; bottom:0; height:38vh; pointer-events:none; z-index:0;
     background:
-      radial-gradient(120% 90% at 22% 100%, rgba(90,200,255,.4), transparent 60%),
-      radial-gradient(120% 90% at 78% 100%, rgba(40,150,230,.38), transparent 60%),
-      radial-gradient(140% 100% at 50% 120%, rgba(20,110,190,.35), transparent 65%);
+      radial-gradient(120% 90% at 22% 100%, rgba(90,200,255,.18), transparent 60%),
+      radial-gradient(120% 90% at 78% 100%, rgba(40,150,230,.16), transparent 60%),
+      radial-gradient(140% 100% at 50% 120%, rgba(20,110,190,.14), transparent 65%);
   }
   .card { position:relative; z-index:1; background:#fff; border-radius:18px; width:100%; max-width:380px; overflow:hidden; box-shadow:0 24px 48px rgba(0,0,0,.28); }
   .card-hero {
