@@ -66,10 +66,15 @@
   .dept-item.zero .dept-item-count { color:var(--red); }
 
   table { width:100%; border-collapse:collapse; }
-  th, td { text-align:left; padding:10px 12px; font-size:13px; border-bottom:1px solid #eef0f6; }
+  th, td { text-align:left; padding:13px 14px; font-size:13.5px; border-bottom:1px solid #eef0f6; }
   th { background:#f8f9fc; color:var(--navy); font-weight:600; font-size:12px; text-transform:uppercase; }
-  tbody tr { cursor:pointer; }
+  tbody tr { cursor:pointer; transition:background .15s ease; }
   tbody tr:hover { background:#f8f9fc; }
+  tbody tr.row-pending { background:#fffaf0; border-left:3px solid #f4b73f; }
+  tbody tr.row-pending:hover { background:#fef3dd; }
+  tbody tr.row-pending td:first-child { font-weight:700; color:var(--navy); }
+  .pending-dot { display:inline-block; width:7px; height:7px; border-radius:50%; background:#f4b73f; margin-right:7px; box-shadow:0 0 0 3px rgba(244,183,63,.25); vertical-align:middle; }
+  .pending-alert { display:inline-flex; align-items:center; gap:6px; background:#fff4e0; color:#a9700f; font-weight:700; font-size:12.5px; padding:6px 14px; border-radius:20px; }
   .badge { padding:4px 10px; border-radius:20px; font-size:11px; font-weight:600; white-space:nowrap; }
   .b-cho { background:#fff4e0; color:#a9700f; } .b-ok { background:#e6f4ea; color:#1e7e34; } .b-tuchoi { background:#fdeceb; color:#b0271e; }
 
@@ -155,9 +160,12 @@
   <div class="panel">
     <div class="panel-head">
       <h2>Danh sách đề cử</h2>
-      <div class="scope-note" id="scopeNote"></div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span class="pending-alert hidden" id="pendingAlert"></span>
+        <div class="scope-note" id="scopeNote"></div>
+      </div>
     </div>
-    <div class="scope-note" style="margin-bottom:8px;">💡 Bấm vào 1 dòng để xem chi tiết đề cử và xét duyệt.</div>
+    <div class="scope-note" style="margin-bottom:8px;">💡 Bấm vào 1 dòng để xem chi tiết đề cử và xét duyệt. Đề cử <b>đang chờ duyệt</b> được đánh dấu nổi bật và luôn hiển thị lên đầu danh sách.</div>
     <table>
       <thead><tr><th>Ứng viên</th><th>Đơn vị</th><th>Người đề xuất</th><th>Trạng thái</th><th>Ngày nộp</th></tr></thead>
       <tbody id="rows"><tr><td colspan="5" class="loading">Đang tải...</td></tr></tbody>
@@ -266,7 +274,7 @@ async function loadDeptTree() {
   el.innerHTML = Object.entries(groups).map(([loai, items], gi) => {
     const total = items.reduce((s, d) => s + d.SoLuong, 0);
     const zeroCount = items.filter(d => d.SoLuong === 0).length;
-    return `<div class="dept-group ${gi === 0 ? 'open' : ''}" id="group-${loai}">
+    return `<div class="dept-group" id="group-${loai}">
       <div class="dept-group-head" onclick="document.getElementById('group-${loai}').classList.toggle('open')">
         <span class="name"><span class="arrow">▶</span> ${loai}</span>
         <span class="summary">${total} đề cử · ${items.length} đơn vị${zeroCount ? ` · <span style="color:var(--red);font-weight:600;">${zeroCount} chưa nộp</span>` : ''}</span>
@@ -303,18 +311,41 @@ async function loadAll() {
   document.getElementById('scopeNote').textContent = session.role === 'admin' ? 'Đang xem: toàn bộ đơn vị' : `Đang xem: phạm vi phụ trách (${session.phamVi})`;
 
   currentItems = data.items || [];
-  document.getElementById('rows').innerHTML = currentItems.length ? currentItems.map(r => `
-    <tr onclick="openDetail('${r.ID}')">
-      <td>${r.HoTenUngVien}</td><td>${r.TenDonVi}</td><td>${r.NguoiDeXuat}</td>
+  const sorted = [...currentItems].sort((a, b) => {
+    const pa = String(a.TrangThai || '').startsWith('Chờ') ? 0 : 1;
+    const pb = String(b.TrangThai || '').startsWith('Chờ') ? 0 : 1;
+    if (pa !== pb) return pa - pb;
+    return new Date(b.ThoiGianNop) - new Date(a.ThoiGianNop);
+  });
+  const pendingCount = sorted.filter(r => String(r.TrangThai || '').startsWith('Chờ')).length;
+  const alertEl = document.getElementById('pendingAlert');
+  if (pendingCount > 0) { alertEl.classList.remove('hidden'); alertEl.innerHTML = `🔔 ${pendingCount} đề cử đang chờ duyệt`; }
+  else { alertEl.classList.add('hidden'); }
+
+  document.getElementById('rows').innerHTML = sorted.length ? sorted.map(r => {
+    const isPending = String(r.TrangThai || '').startsWith('Chờ');
+    return `<tr onclick="openDetail('${r.ID}')" class="${isPending ? 'row-pending' : ''}">
+      <td>${isPending ? '<span class="pending-dot"></span>' : ''}${r.HoTenUngVien}</td><td>${r.TenDonVi}</td><td>${r.NguoiDeXuat}</td>
       <td><span class="badge ${badgeClass(r.TrangThai)}">${r.TrangThai}</span></td>
       <td>${r.ThoiGianNop ? new Date(r.ThoiGianNop).toLocaleDateString('vi-VN') : ''}</td>
-    </tr>`).join('') : '<tr><td colspan="5" style="text-align:center;color:#6b7280;padding:20px;">Không có đề cử nào.</td></tr>';
+    </tr>`;
+  }).join('') : '<tr><td colspan="5" style="text-align:center;color:#6b7280;padding:20px;">Không có đề cử nào.</td></tr>';
 }
 
 document.getElementById('quarterSelect').addEventListener('change', (e) => { currentQuarter = e.target.value; loadAll(); });
 
 // ---------- Modal chi tiết ----------
 let currentDetailId = null;
+
+// Link "xem" thường của Drive (https://drive.google.com/file/d/ID/view...) KHÔNG dùng trực tiếp
+// làm src cho <img> được (chỉ mở được trang xem trước trong trình duyệt) — cần đổi sang dạng
+// nhúng được (uc?export=view&id=ID). Hàm này tự nhận diện ID dù link ở định dạng nào.
+function toEmbeddableDriveUrl(url) {
+  if (!url) return '';
+  const m = String(url).match(/[-\w]{25,}/); // ID file Drive luôn là chuỗi dài (thường 33 ký tự)
+  if (!m) return url;
+  return `https://drive.google.com/uc?export=view&id=${m[0]}`;
+}
 
 async function openDetail(id) {
   currentDetailId = id;
@@ -335,7 +366,7 @@ async function openDetail(id) {
   badge.textContent = it.TrangThai; badge.className = 'badge ' + badgeClass(it.TrangThai);
 
   const img = document.getElementById('mAnh');
-  if (it.AnhChanDungURL) { img.src = it.AnhChanDungURL; img.classList.remove('placeholder'); }
+  if (it.AnhChanDungURL) { img.src = toEmbeddableDriveUrl(it.AnhChanDungURL); img.classList.remove('placeholder'); }
   else { img.removeAttribute('src'); img.classList.add('placeholder'); img.alt = 'Không có ảnh'; }
 
   document.getElementById('mBoiCanh').textContent = story.boiCanh || '—';
