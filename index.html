@@ -282,7 +282,7 @@ function candidateBlockHtml() {
       </div>
     </div>
     <label>Ảnh chân dung</label>
-    <div class="hint">Yêu cầu ảnh rõ nét, tươi vui, nhìn rõ mặt. Ảnh sẽ được tự động nén xuống dưới ~1-1.5MB (vẫn đủ nét để in poster/bảng tin), giữ nguyên tỉ lệ.</div>
+    <div class="hint">Yêu cầu ảnh rõ nét, tươi vui, nhìn rõ mặt. Ảnh sẽ được hệ thống tự động nén xuống mức nhẹ, an toàn để nộp nhanh (vẫn đủ nét để in poster/bảng tin), giữ nguyên tỉ lệ.</div>
     <input type="file" data-field="anhChanDung" accept="image/*">
     <img class="file-preview" data-field="preview">
     <div class="compress-note" data-field="compressNote"></div>
@@ -425,14 +425,18 @@ candidatesContainer.addEventListener('change', async (e) => {
   if (!file) return;
   const note = block.querySelector('[data-field="compressNote"]');
   note.style.display = 'block';
-  note.textContent = 'Đang nén ảnh...';
-  const b64 = await Api.compressImage(file);
-  block._imageBase64 = b64;
-  const preview = block.querySelector('[data-field="preview"]');
-  preview.src = b64;
-  preview.style.display = 'block';
-  const sizeKB = Math.round((b64.length * 0.75) / 1024);
-  note.textContent = `✓ Đã nén ảnh xuống còn ~${sizeKB}KB`;
+  note.textContent = 'Đang nén ảnh... (ảnh càng nặng, nén càng lâu — vui lòng đợi vài giây)';
+  try {
+    const b64 = await Api.compressImage(file);
+    block._imageBase64 = b64;
+    const preview = block.querySelector('[data-field="preview"]');
+    preview.src = b64;
+    preview.style.display = 'block';
+    const sizeKB = Math.round((b64.length * 0.75) / 1024);
+    note.textContent = `✓ Đã nén ảnh xuống còn ~${sizeKB}KB`;
+  } catch (err) {
+    note.textContent = '⚠️ Không đọc được ảnh này — vui lòng thử chọn ảnh khác (định dạng JPG/PNG).';
+  }
 });
 
 // ---------- Thu thập dữ liệu ----------
@@ -525,6 +529,42 @@ document.getElementById('nominationForm').addEventListener('submit', function(e)
 
 document.getElementById('btnBackEdit').onclick = () => document.getElementById('reviewOverlay').classList.add('hidden');
 
+// Nộp 1 ứng viên — nếu hết thời gian chờ VÀ ứng viên có kèm ảnh, tự động thử lại 1 lần KHÔNG
+// kèm ảnh (dùng CÙNG clientKey nên không tạo trùng nếu lượt đầu thực ra đã thành công ở server,
+// chỉ là trình duyệt không nhận được xác nhận). Nhờ vậy dữ liệu đề cử LUÔN được ghi nhận dù ảnh
+// có vấn đề gì (quá nặng, mạng chậm...) — chỉ ảnh là phần có thể bị bỏ lại, không phải cả đề cử.
+async function submitOneCandidate(shared, candidate, baseLabel, btn) {
+  const hasImage = !!candidate.imageBase64;
+  try {
+    const res = await Api.submitNomination(
+      Object.assign({}, shared, candidate),
+      (attempt, max) => { btn.textContent = `${baseLabel} — đang xác nhận với hệ thống (${attempt}/${max})...`; }
+    );
+    return res.success
+      ? { ok: true, imageDropped: false }
+      : { ok: false, message: res.message };
+  } catch (err) {
+    if (!hasImage) {
+      return { ok: false, message: 'Hết thời gian chờ phản hồi từ hệ thống — vui lòng kiểm tra kết nối mạng rồi thử lại.' };
+    }
+    // Có ảnh + hết thời gian chờ → nhiều khả năng do ảnh quá nặng hoặc mạng đang chậm với dữ liệu
+    // lớn. Thử lại ngay, cùng clientKey, bỏ ảnh ra để giảm tối đa dung lượng gửi đi.
+    btn.textContent = `${baseLabel} — ảnh gửi chưa thành công, đang thử lại không kèm ảnh...`;
+    try {
+      const retryCandidate = Object.assign({}, candidate, { imageBase64: '' });
+      const res2 = await Api.submitNomination(
+        Object.assign({}, shared, retryCandidate),
+        (attempt, max) => { btn.textContent = `${baseLabel} — đang xác nhận lại (${attempt}/${max})...`; }
+      );
+      return res2.success
+        ? { ok: true, imageDropped: true }
+        : { ok: false, message: res2.message };
+    } catch (err2) {
+      return { ok: false, message: 'Ảnh quá nặng hoặc mạng quá chậm khiến hệ thống không xử lý kịp, kể cả khi đã thử bỏ ảnh. Vui lòng kiểm tra lại kết nối mạng và thử nộp lại (có thể chọn ảnh nhẹ hơn hoặc chụp ảnh mới với độ phân giải thấp hơn).' };
+    }
+  }
+}
+
 document.getElementById('btnConfirmSubmit').onclick = async () => {
   const btn = document.getElementById('btnConfirmSubmit');
   const reviewStatus = document.getElementById('reviewStatus');
@@ -534,25 +574,27 @@ document.getElementById('btnConfirmSubmit').onclick = async () => {
   const candidates = collectCandidates();
   let successCount = 0;
   const errors = [];
+  const imageDropped = [];
 
   for (let i = 0; i < candidates.length; i++) {
     const baseLabel = candidates.length > 1 ? `Đang gửi ứng viên ${i + 1}/${candidates.length}` : 'Đang gửi';
     btn.textContent = baseLabel + '...';
-    try {
-      const res = await Api.submitNomination(
-        Object.assign({}, shared, candidates[i]),
-        (attempt, max) => { btn.textContent = `${baseLabel} — đang xác nhận với hệ thống (${attempt}/${max})...`; }
-      );
-      if (res.success) successCount++;
-      else errors.push(`Ứng viên ${i + 1} (${candidates[i].hoTenUngVien || '—'}): ${res.message}`);
-    } catch (err) {
-      errors.push(`Ứng viên ${i + 1} (${candidates[i].hoTenUngVien || '—'}): ${err.message}`);
+    const result = await submitOneCandidate(shared, candidates[i], baseLabel, btn);
+    if (result.ok) {
+      successCount++;
+      if (result.imageDropped) imageDropped.push(candidates[i].hoTenUngVien || `Ứng viên ${i + 1}`);
+    } else {
+      errors.push(`Ứng viên ${i + 1} (${candidates[i].hoTenUngVien || '—'}): ${result.message}`);
     }
   }
 
   if (successCount === candidates.length) {
     reviewStatus.className = 'ok';
-    reviewStatus.textContent = candidates.length > 1 ? `Đã nộp thành công ${successCount} đề cử!` : 'Đã nộp đề cử thành công!';
+    let msg = candidates.length > 1 ? `Đã nộp thành công ${successCount} đề cử!` : 'Đã nộp đề cử thành công!';
+    if (imageDropped.length) {
+      msg += ` Riêng ảnh chân dung của ${imageDropped.join(', ')} chưa tải lên được (do ảnh nặng/mạng chậm) — đề cử vẫn được ghi nhận đầy đủ, vui lòng liên hệ PTVH để bổ sung ảnh sau.`;
+    }
+    reviewStatus.textContent = msg;
     btn.style.display = 'none';
     document.getElementById('btnBackEdit').textContent = 'Đóng';
     document.getElementById('nominationForm').reset();

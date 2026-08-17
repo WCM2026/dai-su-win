@@ -101,24 +101,42 @@ function postForm(fields, onProgress) {
   });
 }
 
-// Nén ảnh phía trình duyệt trước khi gửi — giới hạn kích thước để tránh request quá nặng,
-// nhưng vẫn giữ đủ độ phân giải để in poster (mặc định 1600px cạnh dài, chất lượng 88%)
-function compressImage(file, maxDimension = 1200, quality = 0.75) {
+// Nén ảnh thích ứng: bắt đầu ở chất lượng cao (1200px/75%), nếu kết quả vẫn nặng hơn ngưỡng an
+// toàn thì TỰ ĐỘNG nén lại với chất lượng/kích thước thấp hơn, lặp tối đa 6 lần cho tới khi đạt
+// ngưỡng. Nhờ vậy MỌI ảnh — kể cả ảnh gốc rất nặng hoặc quá nhiều chi tiết (khó nén) — đều cho ra
+// kết quả nhỏ gọn ổn định, thay vì phụ thuộc vào 1 mức nén cố định có thể không đủ với 1 số ảnh.
+function compressImage(file, targetBytes = 550000) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       const img = new Image();
       img.onload = () => {
-        let { width, height } = img;
-        if (width > maxDimension || height > maxDimension) {
-          const scale = maxDimension / Math.max(width, height);
-          width = Math.round(width * scale);
-          height = Math.round(height * scale);
-        }
-        const canvas = document.createElement('canvas');
-        canvas.width = width; canvas.height = height;
-        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/jpeg', quality));
+        let dimension = 1200;
+        let quality = 0.75;
+        let attempts = 0;
+        const step = () => {
+          attempts++;
+          let { width, height } = img;
+          if (width > dimension || height > dimension) {
+            const scale = dimension / Math.max(width, height);
+            width = Math.round(width * scale);
+            height = Math.round(height * scale);
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width; canvas.height = height;
+          canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL('image/jpeg', quality);
+          const approxBytes = dataUrl.length * 0.75;
+          if (approxBytes > targetBytes && attempts < 6) {
+            // Ưu tiên giảm chất lượng trước (ít ảnh hưởng thị giác hơn); hết mức mới giảm kích thước
+            if (quality > 0.5) quality = Math.max(0.5, quality - 0.1);
+            else dimension = Math.max(700, dimension - 150);
+            setTimeout(step, 0); // nhường luồng UI, tránh treo trình duyệt khi lặp nhiều lần
+          } else {
+            resolve(dataUrl);
+          }
+        };
+        step();
       };
       img.onerror = reject;
       img.src = e.target.result;
