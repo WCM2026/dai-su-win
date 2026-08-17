@@ -4,65 +4,78 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Admin panel · Đại sứ WIN</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
-  :root { --navy:#1a2f6b; --navy2:#0f1d47; --gold:#f4b73f; --red:#d1362f; --bg:#f6f7fb; --ink:#1c2333; --muted:#6b7280; }
+  :root {
+    /* ── Design tokens (theo Design Guideline WCM) ── */
+    --bd:#003087; --bm:#0057B8; --ac:#00C48C; --a2:#FF6B35; --wn:#FFB800;
+    --bg:#F0F4FA; --sf:#FFFFFF; --br:#DDE4F0;
+    --tx:#1A2340; --tm:#6B7A99; --ng:#F53B3B;
+    --r:12px; --sh:0 2px 16px rgba(0,48,135,.10);
+    --ok:#00875F; --ok-bg:rgba(0,196,140,.12);
+    --warn:#B87800; --warn-bg:rgba(255,184,0,.12);
+    --err:#B52020; --err-bg:rgba(245,59,59,.10);
+    /* ── Alias để tương thích ngược với tên biến cũ ── */
+    --navy:var(--bd); --navy2:#001F6B; --gold:var(--wn); --red:var(--ng); --ink:var(--tx); --muted:var(--tm);
+  }
   * { box-sizing:border-box; }
-  body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); margin:0; color:var(--ink); }
-  .topbar { background:linear-gradient(135deg,var(--navy),var(--navy2)); background-image:linear-gradient(135deg,var(--navy),var(--navy2)),repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 2px,transparent 2px 28px),repeating-linear-gradient(-45deg,rgba(255,255,255,.05) 0 2px,transparent 2px 28px); color:#fff; padding:16px 28px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; border-bottom:3px solid var(--gold); box-shadow:0 4px 14px rgba(15,29,71,.18); }
+  body { font-family:"Be Vietnam Pro",sans-serif; background:var(--bg); margin:0; color:var(--ink); }
+  .topbar { background:linear-gradient(135deg,#001F6B 0%,var(--navy) 45%,var(--bm) 100%); background-image:linear-gradient(135deg,#001F6B 0%,var(--navy) 45%,var(--bm) 100%),repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 2px,transparent 2px 28px),repeating-linear-gradient(-45deg,rgba(255,255,255,.05) 0 2px,transparent 2px 28px); color:#fff; padding:16px 28px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; border-bottom:3px solid var(--gold); box-shadow:0 4px 14px rgba(0,48,135,.25); }
   .topbar-right { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
   .dsw-logo { display:inline-flex; align-items:center; }
   .dsw-logo img { height:34px; display:block; }
-  .brand .eyebrow { color:var(--gold); font-size:11px; letter-spacing:.08em; text-transform:uppercase; }
-  .brand b { font-size:17px; }
+  .brand .eyebrow { color:var(--gold); font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
+  .brand b { font-size:17px; font-weight:800; }
   .controls { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-  .who { background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.3); border-radius:8px; padding:8px 12px; font-size:13px; }
-  .navbtn { background:none; border:1px solid rgba(255,255,255,.4); color:#fff; padding:8px 14px; border-radius:8px; cursor:pointer; font-size:13px; text-decoration:none; }
+  .who { background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.3); border-radius:8px; padding:8px 12px; font-size:13px; font-weight:600; }
+  .navbtn { background:none; border:1px solid rgba(255,255,255,.4); color:#fff; padding:8px 14px; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600; text-decoration:none; }
   .wrap { max-width:1100px; margin:0 auto; padding:24px 28px 60px; }
-  .denied { background:#fdeceb; color:#b0271e; padding:16px 20px; border-radius:10px; margin-bottom:20px; }
+  .denied { background:var(--err-bg); color:var(--err); padding:16px 20px; border-radius:10px; margin-bottom:20px; font-weight:600; }
   .hidden { display:none !important; }
 
-  .tabs { display:flex; gap:8px; margin-bottom:18px; border-bottom:1px solid #e0e3ec; }
-  .tab { padding:10px 6px; font-size:14px; font-weight:600; color:var(--muted); cursor:pointer; border-bottom:2px solid transparent; }
+  .tabs { display:flex; gap:8px; margin-bottom:18px; border-bottom:1px solid var(--br); }
+  .tab { padding:10px 6px; font-size:14px; font-weight:700; color:var(--muted); cursor:pointer; border-bottom:2px solid transparent; }
   .tab.active { color:var(--navy); border-color:var(--red); }
   .tabpage { display:none; } .tabpage.active { display:block; }
 
-  .panel { background:#fff; border-radius:16px; padding:20px 22px; margin-bottom:20px; box-shadow:0 2px 10px rgba(15,29,71,.07); }
+  .panel { background:var(--sf); border-radius:var(--r); padding:20px 22px; margin-bottom:20px; box-shadow:var(--sh); }
   .panel-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:10px; }
-  .panel-head h2 { font-size:15px; color:var(--navy); margin:0; }
+  .panel-head h2 { font-size:15px; font-weight:800; color:var(--navy); margin:0; }
   .scope-note { font-size:12px; color:var(--muted); }
 
-  .qtag { background:#eef0f6; padding:8px 14px; border-radius:20px; font-size:13px; display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+  .qtag { background:#EEF2FA; padding:8px 14px; border-radius:99px; font-size:13px; display:flex; align-items:center; gap:10px; margin-bottom:8px; }
   .qtag button { background:none; border:none; color:var(--red); cursor:pointer; font-weight:700; font-size:14px; }
   .list-wrap { display:flex; flex-direction:column; gap:2px; margin-bottom:16px; }
 
   .add-row { display:flex; gap:8px; flex-wrap:wrap; }
-  .add-row input, .add-row select { padding:9px 12px; border:1px solid #dde1ea; border-radius:8px; font-size:13px; }
-  .btn { background:var(--red); color:#fff; border:none; padding:9px 18px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; }
-  .btn.secondary { background:var(--navy); }
+  .add-row input, .add-row select { padding:9px 12px; border:1.5px solid var(--br); border-radius:8px; font-size:13px; font-family:"Be Vietnam Pro",sans-serif; }
+  .btn { background:var(--bd); color:#fff; border:none; padding:9px 18px; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; font-family:"Be Vietnam Pro",sans-serif; transition:.2s; }
+  .btn:hover { background:var(--bm); }
+  .btn.secondary { background:var(--bd); }
 
   table { width:100%; border-collapse:collapse; }
-  th, td { text-align:left; padding:9px 12px; font-size:13px; border-bottom:1px solid #eef0f6; }
-  th { background:#f8f9fc; color:var(--navy); font-weight:600; font-size:11px; text-transform:uppercase; }
-  .zero-row { background:#fdeceb; }
+  th, td { text-align:left; padding:9px 12px; font-size:13px; border-bottom:1px solid var(--br); }
+  th { background:#F5F8FF; color:var(--muted); font-weight:800; font-size:10.5px; text-transform:uppercase; letter-spacing:.4px; }
+  .zero-row { background:var(--err-bg); }
   .zero-row td:first-child::before { content:'⚠️ '; }
-  .num { font-weight:700; }
+  .num { font-weight:700; font-family:"Space Mono",monospace; }
   .loading { text-align:center; padding:24px; color:var(--muted); }
-  .quarter-select { padding:8px 12px; border:1px solid #dde1ea; border-radius:8px; font-size:13px; margin-bottom:14px; }
+  .quarter-select { padding:8px 12px; border:1.5px solid var(--br); border-radius:8px; font-size:13px; margin-bottom:14px; font-family:"Be Vietnam Pro",sans-serif; }
   .logo-badge { background:#fff; border-radius:8px; padding:5px 12px; display:inline-flex; align-items:center; }
   .logo-badge img { height:18px; display:block; }
-  .users-table-wrap { overflow-x:auto; margin-bottom:16px; border:1px solid #eef0f6; border-radius:10px; }
+  .users-table-wrap { overflow-x:auto; margin-bottom:16px; border:1px solid var(--br); border-radius:10px; }
   .users-table { width:100%; border-collapse:collapse; }
-  .users-table th, .users-table td { text-align:left; padding:11px 14px; font-size:13px; border-bottom:1px solid #eef0f6; white-space:nowrap; }
+  .users-table th, .users-table td { text-align:left; padding:11px 14px; font-size:13px; border-bottom:1px solid var(--br); white-space:nowrap; }
   .users-table td:nth-child(4) { white-space:normal; min-width:220px; }
-  .users-table th { background:#f8f9fc; color:var(--navy); font-weight:600; font-size:11px; text-transform:uppercase; }
-  .users-table tbody tr:hover { background:#fafbfd; }
-  .role-badge { padding:4px 10px; border-radius:20px; font-size:11px; font-weight:700; }
-  .role-admin { background:#eef0f6; color:var(--navy); }
-  .role-hrbp { background:#e6f1ff; color:#1a5fb4; }
-  .status-ok { color:#1e7e34; font-weight:600; font-size:12px; }
-  .status-pending { color:#a9700f; font-weight:600; font-size:12px; }
-  .row-remove { width:auto; background:none; border:1px solid #f3c9c6; color:var(--red); padding:5px 12px; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer; }
-  .row-remove:hover { background:#fdeceb; }
+  .users-table th { background:#F5F8FF; color:var(--muted); font-weight:800; font-size:10.5px; text-transform:uppercase; letter-spacing:.4px; }
+  .users-table tbody tr:hover { background:#F5F8FF; }
+  .role-badge { padding:4px 10px; border-radius:99px; font-size:11px; font-weight:700; }
+  .role-admin { background:#EEF2FA; color:var(--navy); }
+  .role-hrbp { background:rgba(0,87,184,.12); color:var(--bm); }
+  .status-ok { color:var(--ok); font-weight:700; font-size:12px; }
+  .status-pending { color:var(--warn); font-weight:700; font-size:12px; }
+  .row-remove { width:auto; background:none; border:1px solid rgba(245,59,59,.3); color:var(--red); padding:5px 12px; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer; }
+  .row-remove:hover { background:var(--err-bg); }
 </style>
 </head>
 <body>
@@ -194,10 +207,10 @@ async function loadQuarters() {
   ALL_QUARTERS = res.items;
   document.getElementById('quarterList').innerHTML = res.items.map(q => {
     const isActive = q.TrangThai === 'Active';
-    return `<div class="qtag" style="align-items:flex-start;flex-direction:column;gap:4px;${isActive ? 'border:1.5px solid #1e7e34;background:#e6f4ea;' : ''}">
+    return `<div class="qtag" style="align-items:flex-start;flex-direction:column;gap:4px;${isActive ? 'border:1.5px solid #00875F;background:rgba(0,196,140,.12);' : ''}">
       <div style="display:flex;align-items:center;gap:10px;width:100%;">
         <b style="font-size:14px;">${q.TenQuy}</b>
-        <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;${isActive ? 'background:#1e7e34;color:#fff;' : 'background:#e5e8f0;color:#6b7280;'}">${isActive ? '● ĐANG MỞ' : 'Đã đóng'}</span>
+        <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;${isActive ? 'background:#00875F;color:#fff;' : 'background:#DDE4F0;color:#6B7A99;'}">${isActive ? '● ĐANG MỞ' : 'Đã đóng'}</span>
         ${isActive ? '' : `<button class="btn secondary" style="padding:4px 12px;font-size:11px;" onclick="activateQuarter('${q.MaQuy}')">Kích hoạt</button>`}
         <button onclick="removeQuarter('${q.MaQuy}')" style="margin-left:auto;">✕</button>
       </div>

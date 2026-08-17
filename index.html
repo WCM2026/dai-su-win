@@ -4,98 +4,111 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Đề cử Đại sứ WIN</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
-  :root { --navy:#1a2f6b; --navy2:#0f1d47; --gold:#f4b73f; --red:#d1362f; --bg:#f6f7fb; --ink:#1c2333; --muted:#6b7280; }
-  * { box-sizing: border-box; }
-  body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); margin:0; padding:24px; color:var(--ink); }
-  .wrap { max-width:720px; margin:0 auto; }
-  .header { background:linear-gradient(135deg,var(--navy),var(--navy2)); background-image:linear-gradient(135deg,var(--navy),var(--navy2)),repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 2px,transparent 2px 30px),repeating-linear-gradient(-45deg,rgba(255,255,255,.05) 0 2px,transparent 2px 30px); color:#fff; border-radius:18px; padding:26px 30px 30px; margin-bottom:22px; box-shadow:0 10px 30px rgba(15,29,71,.22); border-bottom:3px solid var(--gold); }
-  .header-top { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
-  .header .eyebrow { color:var(--gold); font-weight:600; letter-spacing:.08em; font-size:13px; text-transform:uppercase; }
-  .header h1 { margin:0; font-size:26px; }
-  .header p { margin:0; color:#c7cfe8; font-size:14px; }
-  .card { background:#fff; border-radius:16px; padding:24px 28px; margin-bottom:16px; box-shadow:0 2px 10px rgba(15,29,71,.07); }
-  .card h2 { font-size:15px; color:var(--navy); margin:0 0 16px; padding-bottom:10px; border-bottom:2px solid #eef0f6; }
-  label { display:block; font-size:13px; font-weight:600; margin-bottom:6px; }
-  .hint { font-size:12px; color:var(--muted); margin-top:-4px; margin-bottom:8px; }
-  input[type=text], input[type=date], select, textarea {
-    width:100%; padding:10px 12px; border:1px solid #dde1ea; border-radius:8px; font-size:14px; margin-bottom:16px; font-family:inherit;
+  :root {
+    /* ── Design tokens (theo Design Guideline WCM) ── */
+    --bd:#003087; --bm:#0057B8; --ac:#00C48C; --a2:#FF6B35; --wn:#FFB800;
+    --bg:#F0F4FA; --sf:#FFFFFF; --br:#DDE4F0;
+    --tx:#1A2340; --tm:#6B7A99; --ng:#F53B3B;
+    --r:12px; --sh:0 2px 16px rgba(0,48,135,.10);
+    --ok:#00875F; --ok-bg:rgba(0,196,140,.12);
+    --warn:#B87800; --warn-bg:rgba(255,184,0,.12);
+    --err:#B52020; --err-bg:rgba(245,59,59,.10);
+    /* ── Alias để tương thích ngược với tên biến cũ ── */
+    --navy:var(--bd); --navy2:#001F6B; --gold:var(--wn); --red:var(--ng); --ink:var(--tx); --muted:var(--tm);
   }
+  * { box-sizing: border-box; }
+  body { font-family:"Be Vietnam Pro",sans-serif; background:var(--bg); margin:0; padding:24px; color:var(--ink); }
+  .wrap { max-width:720px; margin:0 auto; }
+  .header { background:linear-gradient(135deg,#001F6B 0%,var(--navy) 45%,var(--bm) 100%); background-image:linear-gradient(135deg,#001F6B 0%,var(--navy) 45%,var(--bm) 100%),repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 2px,transparent 2px 30px),repeating-linear-gradient(-45deg,rgba(255,255,255,.05) 0 2px,transparent 2px 30px); color:#fff; border-radius:var(--r); padding:26px 30px 30px; margin-bottom:22px; box-shadow:0 10px 30px rgba(0,48,135,.28); border-bottom:3px solid var(--gold); }
+  .header-top { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
+  .header .eyebrow { color:var(--gold); font-weight:700; letter-spacing:.08em; font-size:13px; text-transform:uppercase; }
+  .header h1 { margin:0; font-size:26px; font-weight:800; letter-spacing:-.3px; }
+  .header p { margin:0; color:rgba(255,255,255,.65); font-size:14px; }
+  .card { background:var(--sf); border-radius:var(--r); padding:24px 28px; margin-bottom:16px; box-shadow:var(--sh); }
+  .card h2 { font-size:15px; font-weight:800; color:var(--navy); margin:0 0 16px; padding-bottom:10px; border-bottom:2px solid var(--br); }
+  label { display:block; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.4px; color:var(--bm); margin-bottom:6px; }
+  .hint { font-size:12px; color:var(--muted); margin-top:-4px; margin-bottom:8px; text-transform:none; letter-spacing:normal; font-weight:400; }
+  input[type=text], input[type=date], select, textarea {
+    width:100%; padding:10px 14px; border:1.5px solid var(--br); border-radius:9px; font-size:14px; margin-bottom:16px; font-family:inherit; color:var(--tx); outline:none; transition:.2s; background:#fff;
+  }
+  input[type=text]:focus, input[type=date]:focus, select:focus, textarea:focus { border-color:var(--bm); box-shadow:0 0 0 3px rgba(0,87,184,.1); }
   textarea { min-height:90px; resize:vertical; }
   .row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
-  .core-values label.cv { display:flex; align-items:center; gap:8px; font-weight:400; font-size:13px; margin:0; }
+  .core-values label.cv { display:flex; align-items:center; gap:8px; font-weight:400; font-size:13px; margin:0; text-transform:none; letter-spacing:normal; color:var(--tx); }
   .core-values input[type=checkbox] { width:16px; height:16px; margin:0; flex-shrink:0; }
-  button { background:var(--red); color:#fff; border:none; padding:13px 28px; border-radius:8px; font-size:15px; font-weight:600; cursor:pointer; width:100%; transition:transform .12s ease,box-shadow .12s ease; }
-  button:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 6px 16px rgba(209,54,47,.25); }
+  button { background:var(--bd); color:#fff; border:none; padding:13px 28px; border-radius:9px; font-size:15px; font-weight:700; cursor:pointer; width:100%; transition:transform .12s ease,box-shadow .12s ease; font-family:"Be Vietnam Pro",sans-serif; }
+  button:hover:not(:disabled) { background:var(--bm); transform:translateY(-1px); box-shadow:0 6px 16px rgba(0,48,135,.25); }
   button:disabled { opacity:.6; cursor:not-allowed; }
-  #status { margin-top:14px; padding:12px 14px; border-radius:8px; font-size:14px; display:none; }
-  #status.ok { background:#e6f4ea; color:#1e7e34; display:block; }
-  #status.err { background:#fdeceb; color:#b0271e; display:block; }
-  .file-preview { width:90px; height:90px; border-radius:8px; object-fit:cover; margin-top:8px; display:none; border:1px solid #dde1ea; }
-  .compress-note { font-size:12px; color:#1e7e34; margin-top:6px; display:none; }
-  .quarter-info { padding:12px 14px; border-radius:8px; font-size:14px; font-weight:600; }
-  .quarter-info.open { background:#e6f4ea; color:#1e7e34; }
-  .quarter-info.closed { background:#fdeceb; color:#b0271e; }
-  .quarter-deadline { font-size:12.5px; font-weight:400; margin-top:6px; color:#1e7e34; }
+  #status { margin-top:14px; padding:12px 14px; border-radius:8px; font-size:14px; font-weight:600; display:none; }
+  #status.ok { background:var(--ok-bg); color:var(--ok); display:block; }
+  #status.err { background:var(--err-bg); color:var(--err); display:block; }
+  .file-preview { width:90px; height:90px; border-radius:8px; object-fit:cover; margin-top:8px; display:none; border:1px solid var(--br); }
+  .compress-note { font-size:12px; color:var(--ok); margin-top:6px; display:none; }
+  .quarter-info { padding:12px 14px; border-radius:9px; font-size:14px; font-weight:700; }
+  .quarter-info.open { background:var(--ok-bg); color:var(--ok); }
+  .quarter-info.closed { background:var(--err-bg); color:var(--err); }
+  .quarter-deadline { font-size:12.5px; font-weight:400; margin-top:6px; color:var(--ok); font-family:"Space Mono",monospace; }
   .logo-badge { display:inline-flex; align-items:center; background:#fff; border-radius:8px; padding:5px 12px; }
   .logo-badge img { height:20px; display:block; }
   .dsw-logo { display:inline-flex; align-items:center; }
   .dsw-logo img { height:56px; display:block; }
-  .candidate-block { border:1.5px solid #eef0f6; border-radius:14px; padding:18px 20px; margin-bottom:16px; position:relative; }
+  .candidate-block { border:1.5px solid var(--br); border-radius:var(--r); padding:18px 20px; margin-bottom:16px; position:relative; }
   .candidate-block-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
-  .candidate-block-head h3 { margin:0; font-size:14px; color:var(--navy); }
+  .candidate-block-head h3 { margin:0; font-size:14px; font-weight:800; color:var(--navy); }
   .candidate-remove { background:none; border:none; color:var(--red); font-weight:700; cursor:pointer; font-size:13px; width:auto; padding:0; }
   .lookup-note { font-size:12px; margin-top:6px; margin-bottom:8px; display:none; }
-  .lookup-note.ok { color:#1e7e34; display:block; }
-  .lookup-note.err { color:#b0271e; display:block; }
-  .lookup-note.warn { color:#a9700f; display:block; font-weight:600; }
+  .lookup-note.ok { color:var(--ok); display:block; }
+  .lookup-note.err { color:var(--err); display:block; }
+  .lookup-note.warn { color:var(--warn); display:block; font-weight:600; }
   .lookup-row { display:flex; gap:8px; align-items:flex-start; }
   .lookup-row input { margin-bottom:0; }
   .lookup-btn { width:auto; flex-shrink:0; background:var(--navy); padding:10px 16px; font-size:13px; white-space:nowrap; }
-  .employee-info { border:1px solid #dde1ea; border-radius:8px; padding:10px 12px; font-size:13px; min-height:44px; background:#fafbfd; display:flex; align-items:center; }
+  .employee-info { border:1.5px solid var(--br); border-radius:9px; padding:10px 12px; font-size:13px; min-height:44px; background:#F5F8FF; display:flex; align-items:center; }
   .employee-info-empty { color:var(--muted); font-size:12.5px; }
   .employee-info dl { margin:0; display:grid; grid-template-columns:auto 1fr; gap:4px 10px; font-size:13px; width:100%; }
   .employee-info dt { color:var(--muted); }
-  .employee-info dd { margin:0; font-weight:600; }
-  .add-candidate-btn { background:#fff; color:var(--navy); border:1.5px dashed var(--navy); padding:12px; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; width:100%; margin-bottom:16px; }
+  .employee-info dd { margin:0; font-weight:700; font-family:"Space Mono",monospace; font-size:12.5px; }
+  .add-candidate-btn { background:#fff; color:var(--navy); border:1.5px dashed var(--bm); padding:12px; border-radius:9px; font-size:14px; font-weight:700; cursor:pointer; width:100%; margin-bottom:16px; }
   .add-candidate-btn:disabled { opacity:.5; cursor:not-allowed; }
   .candidates-hint { font-size:12px; color:var(--muted); margin:-4px 0 14px; }
-  .cv-item { background:#f8f9fc; border-radius:10px; margin-bottom:8px; padding:10px 12px; }
+  .cv-item { background:#F5F8FF; border-radius:10px; margin-bottom:8px; padding:10px 12px; }
   .cv-info-btn { width:auto; background:none; border:none; color:var(--navy); font-size:11.5px; font-weight:600; padding:6px 0 0 24px; cursor:pointer; text-decoration:underline; }
   .cv-desc { padding:8px 4px 2px 24px; font-size:12.5px; color:var(--muted); line-height:1.6; }
   .cv-desc ul { margin:0; padding-left:16px; }
   .cv-desc li { margin-bottom:3px; }
 
   /* Modal xác nhận trước khi gửi */
-  .modal-overlay { position:fixed; inset:0; background:rgba(15,29,71,.55); display:flex; align-items:center; justify-content:center; padding:20px; z-index:100; }
+  .modal-overlay { position:fixed; inset:0; background:rgba(0,31,107,.55); display:flex; align-items:center; justify-content:center; padding:20px; z-index:100; }
   .modal-overlay.hidden { display:none; }
-  .modal { background:#fff; border-radius:18px; max-width:720px; width:100%; max-height:90vh; overflow-y:auto; }
-  .modal-head { background:linear-gradient(135deg,var(--navy),var(--navy2)); color:#fff; padding:22px 28px; border-radius:18px 18px 0 0; border-bottom:3px solid var(--gold); }
-  .modal-head .eyebrow { color:var(--gold); font-size:11px; text-transform:uppercase; letter-spacing:.08em; }
-  .modal-head h3 { margin:4px 0 0; font-size:19px; }
+  .modal { background:#fff; border-radius:var(--r); max-width:720px; width:100%; max-height:90vh; overflow-y:auto; }
+  .modal-head { background:linear-gradient(135deg,#001F6B 0%,var(--navy) 45%,var(--bm) 100%); color:#fff; padding:22px 28px; border-radius:var(--r) var(--r) 0 0; border-bottom:3px solid var(--gold); }
+  .modal-head .eyebrow { color:var(--gold); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; }
+  .modal-head h3 { margin:4px 0 0; font-size:19px; font-weight:800; }
   .modal-body { padding:24px 28px; }
   .review-grid dl { margin:0 0 18px; display:grid; grid-template-columns:150px 1fr; gap:8px 12px; font-size:13.5px; }
   .review-grid dt { color:var(--muted); }
   .review-grid dd { margin:0; font-weight:600; white-space:pre-wrap; }
-  .review-section h4 { font-size:12px; text-transform:uppercase; letter-spacing:.05em; color:var(--navy); margin:0 0 6px; }
+  .review-section h4 { font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:var(--navy); margin:0 0 6px; }
   .review-section p { margin:0 0 14px; font-size:13.5px; line-height:1.6; white-space:pre-wrap; }
   .review-actions { display:flex; gap:10px; margin-top:10px; }
   .review-actions button { flex:1; }
-  .btn-ghost { background:#fff !important; color:var(--navy) !important; border:1px solid var(--navy) !important; }
+  .btn-ghost { background:#fff !important; color:var(--navy) !important; border:2px solid var(--navy) !important; }
 
-  .review-candidate { background:#f8f9fc; border:1px solid #eef0f6; border-radius:16px; padding:20px 22px; margin-top:18px; }
+  .review-candidate { background:#F5F8FF; border:1px solid var(--br); border-radius:var(--r); padding:20px 22px; margin-top:18px; }
   .review-candidate:first-of-type { margin-top:0; }
-  .rc-badge { display:inline-block; background:var(--navy); color:#fff; font-size:11px; font-weight:700; padding:4px 12px; border-radius:20px; text-transform:uppercase; letter-spacing:.05em; margin-bottom:12px; }
+  .rc-badge { display:inline-block; background:var(--navy); color:#fff; font-size:11px; font-weight:700; padding:4px 12px; border-radius:99px; text-transform:uppercase; letter-spacing:.05em; margin-bottom:12px; }
   .rc-top { display:flex; gap:20px; align-items:flex-start; margin-bottom:16px; }
-  .rc-photo { width:132px; height:132px; border-radius:14px; object-fit:cover; border:1px solid #e5e8f0; flex-shrink:0; background:#eef0f6; }
-  .rc-photo-placeholder { width:132px; height:132px; border-radius:14px; flex-shrink:0; background:#eef0f6; color:var(--muted); font-size:11.5px; display:flex; align-items:center; justify-content:center; text-align:center; padding:8px; }
+  .rc-photo { width:132px; height:132px; border-radius:var(--r); object-fit:cover; border:1px solid var(--br); flex-shrink:0; background:var(--br); }
+  .rc-photo-placeholder { width:132px; height:132px; border-radius:var(--r); flex-shrink:0; background:var(--br); color:var(--muted); font-size:11.5px; display:flex; align-items:center; justify-content:center; text-align:center; padding:8px; }
   .rc-info { flex:1; min-width:0; }
   .rc-name { margin:0 0 12px; font-size:21px; font-weight:800; color:var(--ink); line-height:1.25; }
   .rc-meta { margin:0; display:grid; grid-template-columns:auto 1fr; gap:7px 14px; font-size:13.5px; }
   .rc-meta dt { color:var(--muted); }
-  .rc-meta dd { margin:0; font-weight:600; }
+  .rc-meta dd { margin:0; font-weight:700; }
   .rc-values { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:4px; }
-  .rc-values .cv-tag { background:#fff; border:1px solid #dde1ea; color:var(--navy); font-size:11.5px; font-weight:700; padding:5px 12px; border-radius:20px; }
+  .rc-values .cv-tag { background:linear-gradient(135deg,#FFF6E0,#FFEAC2); border:1px solid #FFD98A; color:#7A5200; font-size:11.5px; font-weight:700; padding:5px 12px; border-radius:99px; }
   .review-candidate .review-section:last-child p { margin-bottom:0; }
 </style>
 </head>
@@ -151,7 +164,7 @@
     <button type="submit" id="submitBtn">Xem lại & Gửi đề cử</button>
     <div id="status"></div>
   </form>
-  <div style="text-align:center;font-size:10.5px;color:#9aa1b0;margin-top:18px;">Phiên bản backend: <span id="backendVersion">đang kiểm tra...</span></div>
+  <div style="text-align:center;font-size:10.5px;color:var(--muted);margin-top:18px;font-family:'Space Mono',monospace;">Phiên bản backend: <span id="backendVersion">đang kiểm tra...</span></div>
 </div>
 
 <!-- Modal xác nhận trước khi gửi -->

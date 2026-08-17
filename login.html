@@ -4,12 +4,24 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Đăng nhập · Đại sứ WIN</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
-  :root { --navy:#1a2f6b; --navy2:#0f1d47; --gold:#f4b73f; --red:#d1362f; --bg:#f6f7fb; --ink:#1c2333; --muted:#6b7280; }
+  :root {
+    /* ── Design tokens (theo Design Guideline WCM) ── */
+    --bd:#003087; --bm:#0057B8; --ac:#00C48C; --a2:#FF6B35; --wn:#FFB800;
+    --bg:#F0F4FA; --sf:#FFFFFF; --br:#DDE4F0;
+    --tx:#1A2340; --tm:#6B7A99; --ng:#F53B3B;
+    --r:12px; --sh:0 2px 16px rgba(0,48,135,.10);
+    --ok:#00875F; --ok-bg:rgba(0,196,140,.12);
+    --warn:#B87800; --warn-bg:rgba(255,184,0,.12);
+    --err:#B52020; --err-bg:rgba(245,59,59,.10);
+    /* ── Alias để tương thích ngược với tên biến cũ ── */
+    --navy:var(--bd); --navy2:#001F6B; --gold:var(--wn); --red:var(--ng); --ink:var(--tx); --muted:var(--tm);
+  }
   * { box-sizing:border-box; }
   html, body { height:100%; }
   body {
-    font-family:'Segoe UI',system-ui,sans-serif; margin:0; padding:20px;
+    font-family:"Be Vietnam Pro",sans-serif; margin:0; padding:20px;
     min-height:100vh; display:flex; align-items:center; justify-content:center;
     background:var(--bg);
     position:relative; overflow-x:hidden;
@@ -22,10 +34,10 @@
       radial-gradient(120% 90% at 78% 100%, rgba(40,150,230,.16), transparent 60%),
       radial-gradient(140% 100% at 50% 120%, rgba(20,110,190,.14), transparent 65%);
   }
-  .card { position:relative; z-index:1; background:#fff; border-radius:18px; width:100%; max-width:380px; overflow:hidden; box-shadow:0 24px 48px rgba(0,0,0,.28); }
+  .card { position:relative; z-index:1; background:var(--sf); border-radius:var(--r); width:100%; max-width:380px; overflow:hidden; box-shadow:0 24px 48px rgba(0,48,135,.28); }
   .card-hero {
-    background:linear-gradient(135deg,var(--navy),var(--navy2));
-    background-image:linear-gradient(135deg,var(--navy),var(--navy2)),repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 2px,transparent 2px 28px),repeating-linear-gradient(-45deg,rgba(255,255,255,.05) 0 2px,transparent 2px 28px);
+    background:linear-gradient(135deg,#001F6B 0%,var(--navy) 45%,var(--bm) 100%);
+    background-image:linear-gradient(135deg,#001F6B 0%,var(--navy) 45%,var(--bm) 100%),repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 2px,transparent 2px 28px),repeating-linear-gradient(-45deg,rgba(255,255,255,.05) 0 2px,transparent 2px 28px);
     padding:26px 20px 20px; display:flex; flex-direction:column; align-items:center; gap:10px;
     border-bottom:3px solid var(--gold);
   }
@@ -34,15 +46,16 @@
   .dsw-logo { display:inline-flex; align-items:center; }
   .dsw-logo img { height:56px; display:block; }
   .card-body { padding:26px 32px 32px; }
-  h1 { font-size:19px; color:var(--navy); text-align:center; margin:0 0 22px; }
-  label { display:block; font-size:13px; font-weight:600; margin-bottom:6px; color:var(--ink); }
-  input { width:100%; padding:11px 12px; border:1px solid #dde1ea; border-radius:8px; font-size:14px; margin-bottom:14px; }
-  button { width:100%; background:var(--red); color:#fff; border:none; padding:12px; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; transition:transform .12s ease,box-shadow .12s ease; }
-  button:hover { transform:translateY(-1px); box-shadow:0 6px 16px rgba(209,54,47,.25); }
+  h1 { font-size:19px; font-weight:800; color:var(--navy); text-align:center; margin:0 0 22px; }
+  label { display:block; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px; color:var(--bm); }
+  input { width:100%; padding:11px 14px; border:1.5px solid var(--br); border-radius:9px; font-size:14px; margin-bottom:14px; font-family:"Be Vietnam Pro",sans-serif; color:var(--tx); outline:none; transition:.2s; }
+  input:focus { border-color:var(--bm); box-shadow:0 0 0 3px rgba(0,87,184,.1); }
+  button { width:100%; background:var(--bd); color:#fff; border:none; padding:12px; border-radius:9px; font-size:14px; font-weight:700; cursor:pointer; transition:transform .12s ease,box-shadow .12s ease; font-family:"Be Vietnam Pro",sans-serif; }
+  button:hover { background:var(--bm); transform:translateY(-1px); box-shadow:0 6px 16px rgba(0,48,135,.25); }
   button.secondary { background:var(--navy); }
-  .msg { font-size:13px; padding:10px 12px; border-radius:8px; margin-bottom:14px; display:none; }
-  .msg.ok { background:#e6f4ea; color:#1e7e34; display:block; }
-  .msg.err { background:#fdeceb; color:#b0271e; display:block; }
+  .msg { font-size:13px; font-weight:600; padding:10px 12px; border-radius:8px; margin-bottom:14px; display:none; }
+  .msg.ok { background:var(--ok-bg); color:var(--ok); display:block; }
+  .msg.err { background:var(--err-bg); color:var(--err); display:block; }
   .step { display:none; }
   .step.active { display:block; }
   .link { text-align:center; font-size:12px; color:var(--muted); margin-top:8px; cursor:pointer; text-decoration:underline; }
