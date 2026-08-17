@@ -103,7 +103,7 @@ function postForm(fields, onProgress) {
 
 // Nén ảnh phía trình duyệt trước khi gửi — giới hạn kích thước để tránh request quá nặng,
 // nhưng vẫn giữ đủ độ phân giải để in poster (mặc định 1600px cạnh dài, chất lượng 88%)
-function compressImage(file, maxDimension = 1600, quality = 0.88) {
+function compressImage(file, maxDimension = 1200, quality = 0.75) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
