@@ -139,7 +139,7 @@ const Api = {
   getStats: (token, quy) => jsonp('stats', { token, quy: quy || 'all' }),
   getPipeline: (token, quy) => jsonp('pipeline', { token, quy }),
   getDetail: (token, id) => jsonp('detail', { token, id }),
-  decide: (token, id, approved) => jsonp('decide', { token, id, approved: approved ? 'true' : 'false' }),
+  decide: (token, id, approved, lyDo) => jsonp('decide', { token, id, approved: approved ? 'true' : 'false', lyDo: lyDo || '' }),
 
   // Quarters
   getQuarters: () => jsonp('quarters'),

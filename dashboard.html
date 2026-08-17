@@ -227,6 +227,14 @@
         <button class="btn" id="btnApprove">✅ Duyệt</button>
         <button class="btn secondary" id="btnReject" style="background:var(--ng);">❌ Từ chối</button>
       </div>
+      <div class="hidden" id="rejectBox" style="margin-top:14px;">
+        <label style="display:block;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--bm);margin-bottom:6px;">Lý do từ chối (sẽ gửi cho người đề xuất)</label>
+        <textarea id="rejectReason" rows="3" style="width:100%;padding:10px 12px;border:1.5px solid var(--br);border-radius:8px;font-size:13px;font-family:inherit;margin-bottom:10px;box-sizing:border-box;" placeholder="VD: Câu chuyện chưa thể hiện rõ đóng góp nổi bật, đề nghị bổ sung thêm ở Quý sau."></textarea>
+        <div style="display:flex;gap:10px;">
+          <button class="btn" id="btnConfirmReject" style="background:var(--ng);flex:1;">Xác nhận từ chối</button>
+          <button class="btn ghost" id="btnCancelReject" style="flex:1;">Hủy</button>
+        </div>
+      </div>
       <div class="decide-msg" id="decideMsg"></div>
     </div>
   </div>
@@ -426,21 +434,45 @@ async function openDetail(id) {
   document.getElementById('mGtcl').innerHTML = (it.GiaTriCotLoi || '').split(',').filter(Boolean).map(v => `<span class="cv-tag">${v.trim()}</span>`).join('') || '<span style="color:var(--tm);font-size:13px;">Chưa chọn</span>';
 
   document.getElementById('decisionBar').classList.toggle('hidden', !res.canDecide);
+  document.getElementById('rejectBox').classList.add('hidden');
+  document.getElementById('rejectReason').value = '';
 }
 
 function closeDetail() { document.getElementById('modalOverlay').classList.add('hidden'); }
 document.getElementById('modalClose').onclick = closeDetail;
 document.getElementById('modalOverlay').addEventListener('click', (e) => { if (e.target.id === 'modalOverlay') closeDetail(); });
 
-async function decide(approved) {
+async function decide(approved, lyDo) {
   const msg = document.getElementById('decideMsg');
-  const res = await Api.decide(session.token, currentDetailId, approved);
+  const res = await Api.decide(session.token, currentDetailId, approved, lyDo);
   msg.className = 'decide-msg ' + (res.success ? 'ok' : 'err');
   msg.textContent = res.message;
-  if (res.success) { document.getElementById('decisionBar').classList.add('hidden'); loadAll(); }
+  if (res.success) {
+    document.getElementById('decisionBar').classList.add('hidden');
+    document.getElementById('rejectBox').classList.add('hidden');
+    loadAll();
+  }
 }
-document.getElementById('btnApprove').onclick = () => decide(true);
-document.getElementById('btnReject').onclick = () => decide(false);
+document.getElementById('btnApprove').onclick = () => decide(true, '');
+document.getElementById('btnReject').onclick = () => {
+  document.getElementById('decisionBar').classList.add('hidden');
+  document.getElementById('rejectBox').classList.remove('hidden');
+  document.getElementById('rejectReason').focus();
+};
+document.getElementById('btnCancelReject').onclick = () => {
+  document.getElementById('rejectBox').classList.add('hidden');
+  document.getElementById('decisionBar').classList.remove('hidden');
+};
+document.getElementById('btnConfirmReject').onclick = () => {
+  const reason = document.getElementById('rejectReason').value.trim();
+  const msg = document.getElementById('decideMsg');
+  if (!reason) {
+    msg.className = 'decide-msg err';
+    msg.textContent = 'Vui lòng nhập lý do từ chối.';
+    return;
+  }
+  decide(false, reason);
+};
 
 // ---------- Init ----------
 (async function init() {
