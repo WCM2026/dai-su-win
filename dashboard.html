@@ -480,6 +480,9 @@ document.getElementById('btnConfirmReject').onclick = () => {
   if (session.role === 'admin') document.getElementById('adminLink').style.display = 'inline-block';
   await loadQuarters();
   await loadAll();
+  // Nếu link tới đây kèm ?id=... (từ email thông báo), tự động mở chi tiết đề cử đó luôn.
+  const jumpId = new URLSearchParams(window.location.search).get('id');
+  if (jumpId) openDetail(jumpId);
 })();
 </script>
 </body>
