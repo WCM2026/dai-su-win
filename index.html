@@ -136,16 +136,18 @@
   .quota-toggle.open .quota-toggle-arrow { transform:rotate(180deg); }
   .quota-body { margin-top:10px; max-height:0; overflow:hidden; transition:max-height .3s ease; }
   .quota-body.open { max-height:1200px; }
-  .quota-group { margin-bottom:10px; }
-  .quota-group-title { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.4px; color:var(--muted); margin-bottom:5px; }
-  .quota-row { display:flex; align-items:center; justify-content:space-between; padding:6px 10px; border-radius:7px; font-size:12.5px; margin-bottom:3px; }
-  .quota-row.available { background:#F5F8FF; }
-  .quota-row.full { background:var(--err-bg); }
-  .quota-row-name { color:var(--tx); }
-  .quota-row-count { font-family:'Space Mono',monospace; font-weight:700; font-size:12px; }
-  .quota-row.available .quota-row-count { color:var(--ok); }
-  .quota-row.full .quota-row-count { color:var(--err); }
+  .quota-group { margin-bottom:12px; }
+  .quota-total-row { display:flex; align-items:center; justify-content:space-between; padding:8px 10px; border-radius:7px; font-size:13px; font-weight:800; margin-bottom:4px; }
+  .quota-total-row.available { background:var(--ok-bg); color:var(--ok); }
+  .quota-total-row.full { background:var(--err-bg); color:var(--err); }
+  .quota-total-row .quota-row-count { font-family:'Space Mono',monospace; }
+  .quota-subunit-list { padding-left:10px; }
+  .quota-subunit-row { display:flex; align-items:center; justify-content:space-between; padding:4px 8px; font-size:11.5px; color:var(--muted); }
+  .quota-subunit-row .quota-row-count { font-family:'Space Mono',monospace; color:var(--tx); }
   .quota-loading { font-size:12px; color:var(--muted); }
+  .loaidonvi-quota-hint { font-size:12px; margin:-8px 0 14px; padding:6px 10px; border-radius:7px; display:none; }
+  .loaidonvi-quota-hint.available { display:block; background:var(--ok-bg); color:var(--ok); }
+  .loaidonvi-quota-hint.full { display:block; background:var(--err-bg); color:var(--err); }
 </style>
 </head>
 <body>
@@ -202,6 +204,7 @@
           <select id="mienVungKhoi" required><option value="">-- Chọn Loại đơn vị trước --</option></select>
         </div>
       </div>
+      <div class="loaidonvi-quota-hint" id="loaiDonViQuotaHint"></div>
       <label>Khối/Bộ phận/Cơ sở</label>
       <input type="text" id="tenDonVi" required>
       <label>Đại diện CBLĐ đề xuất</label>
@@ -269,41 +272,60 @@ Api.getVersion().then(res => {
   else { el.textContent = '(không lấy được — có thể do lỗi kết nối)'; }
 }).catch(() => { document.getElementById('backendVersion').textContent = '(không kết nối được tới backend)'; });
 
-// ---------- Quota đăng ký theo đơn vị (gấp gọn, chỉ tải dữ liệu khi mở lần đầu) ----------
-let quotaLoaded = false;
+// ---------- Quota đăng ký (áp dụng TỔNG theo Loại đơn vị — SSC/WinMart/MiniMart) ----------
+// Tải 1 lần khi biết Quý đang mở, dùng chung cho: (1) khối gấp gọn xem chi tiết, (2) dòng hint nhỏ
+// hiển thị ngay sau khi chọn Loại đơn vị ở Mục 1.
+let quotaData = null; // { totals: [...], items: [...] }
+let quotaFetchPromise = null;
+
+function fetchQuotaData() {
+  if (quotaFetchPromise) return quotaFetchPromise;
+  if (!activeQuarter) return Promise.resolve(null);
+  quotaFetchPromise = Api.getQuotaOverview(activeQuarter.MaQuy).then(res => {
+    quotaData = (res && res.success) ? res : null;
+    return quotaData;
+  }).catch(() => { quotaFetchPromise = null; return null; });
+  return quotaFetchPromise;
+}
+
+function renderQuotaPanel(data) {
+  const content = document.getElementById('quotaContent');
+  if (!data || !data.totals || !data.totals.length) {
+    content.textContent = 'Chưa có dữ liệu quota cho Quý này.';
+    return;
+  }
+  content.innerHTML = data.totals.map(t => {
+    const subunits = data.items.filter(i => i.loaiDonVi === t.loaiDonVi);
+    return `
+      <div class="quota-group">
+        <div class="quota-total-row ${t.conLai > 0 ? 'available' : 'full'}">
+          <span>${esc(t.loaiDonVi)}</span>
+          <span class="quota-row-count">${t.daNop}/${t.quota} · còn ${t.conLai}</span>
+        </div>
+        <div class="quota-subunit-list">
+          ${subunits.map(i => `
+            <div class="quota-subunit-row">
+              <span>${esc(i.tenKhoiPhong)}</span>
+              <span class="quota-row-count">${i.daNop} đã nộp</span>
+            </div>`).join('')}
+        </div>
+      </div>`;
+  }).join('') + '<div class="hint" style="margin-top:8px;">Quota được tính theo TỔNG của cả Khối (SSC/WinMart/MiniMart) — số theo từng Miền/Vùng/Khối-Phòng bên trên chỉ để tham khảo, không bị giới hạn riêng.</div>';
+}
+
 document.getElementById('quotaToggle').onclick = async () => {
   const toggle = document.getElementById('quotaToggle');
   const body = document.getElementById('quotaBody');
   toggle.classList.toggle('open');
   body.classList.toggle('open');
-  if (quotaLoaded || !body.classList.contains('open')) return;
+  if (!body.classList.contains('open')) return;
   if (!activeQuarter) {
     document.getElementById('quotaContent').textContent = 'Chưa có Quý nào đang mở để xem quota.';
     return;
   }
-  quotaLoaded = true;
-  try {
-    const res = await Api.getQuotaOverview(activeQuarter.MaQuy);
-    const content = document.getElementById('quotaContent');
-    if (!res.success || !res.items.length) {
-      content.textContent = 'Chưa có dữ liệu quota cho Quý này.';
-      return;
-    }
-    const groups = {};
-    res.items.forEach(i => { (groups[i.loaiDonVi] = groups[i.loaiDonVi] || []).push(i); });
-    content.innerHTML = Object.keys(groups).map(loai => `
-      <div class="quota-group">
-        <div class="quota-group-title">${esc(loai)}</div>
-        ${groups[loai].map(i => `
-          <div class="quota-row ${i.conLai > 0 ? 'available' : 'full'}">
-            <span class="quota-row-name">${esc(i.tenKhoiPhong)}</span>
-            <span class="quota-row-count">${i.daNop}/${i.quota} · còn ${i.conLai}</span>
-          </div>`).join('')}
-      </div>`).join('');
-  } catch (err) {
-    document.getElementById('quotaContent').textContent = 'Không tải được dữ liệu quota, vui lòng thử lại.';
-    quotaLoaded = false;
-  }
+  document.getElementById('quotaContent').textContent = 'Đang tải...';
+  const data = await fetchQuotaData();
+  renderQuotaPanel(data);
 };
 
 Api.getActiveQuarter().then(res => {
@@ -314,6 +336,7 @@ Api.getActiveQuarter().then(res => {
     el.className = 'quarter-info open';
     const hanNop = res.item.HanB1_DonViDeCu ? new Date(res.item.HanB1_DonViDeCu).toLocaleDateString('vi-VN') : null;
     el.innerHTML = `🟢 Đang nhận đề cử cho: ${esc(res.item.TenQuy)}` + (hanNop ? `<div class="quarter-deadline">⏰ Hạn gửi đề cử: <b>${hanNop}</b></div>` : '');
+    fetchQuotaData(); // tải trước, không chờ người dùng mở panel/chọn Loại đơn vị mới tải
   } else {
     el.className = 'quarter-info closed';
     el.textContent = '🔴 Hiện không có Quý nào đang mở đăng ký. Vui lòng liên hệ PTVH/Admin.';
@@ -321,16 +344,33 @@ Api.getActiveQuarter().then(res => {
   }
 });
 
-// Nạp danh sách Miền/Vùng/Khối-Phòng theo Loại đơn vị đã chọn (theo danh mục chuẩn công ty)
+// Nạp danh sách Miền/Vùng/Khối-Phòng theo Loại đơn vị đã chọn (theo danh mục chuẩn công ty),
+// đồng thời hiển thị dòng nhỏ báo quota còn lại của TỔNG Loại đơn vị vừa chọn cho Quý này.
 document.getElementById('loaiDonVi').addEventListener('change', async function(e) {
   const sel = document.getElementById('mienVungKhoi');
   const loaiDonVi = e.target.value;
-  if (!loaiDonVi) { sel.innerHTML = '<option value="">-- Chọn Loại đơn vị trước --</option>'; return; }
+  const hintEl = document.getElementById('loaiDonViQuotaHint');
+  if (!loaiDonVi) {
+    sel.innerHTML = '<option value="">-- Chọn Loại đơn vị trước --</option>';
+    hintEl.className = 'loaidonvi-quota-hint';
+    return;
+  }
   sel.innerHTML = '<option value="">Đang tải...</option>';
   const res = await Api.getDeptList(loaiDonVi);
   sel.innerHTML = res.items.length
     ? '<option value="">-- Chọn --</option>' + res.items.map(d => `<option value="${d}">${d}</option>`).join('')
     : '<option value="">Chưa có danh mục cho loại đơn vị này</option>';
+
+  const data = await fetchQuotaData();
+  const total = data && data.totals ? data.totals.find(t => t.loaiDonVi === loaiDonVi) : null;
+  if (total) {
+    hintEl.className = 'loaidonvi-quota-hint ' + (total.conLai > 0 ? 'available' : 'full');
+    hintEl.textContent = total.conLai > 0
+      ? `📊 Khối ${loaiDonVi} đã nộp ${total.daNop}/${total.quota} — còn ${total.conLai} lượt đề cử cho Quý này.`
+      : `⚠️ Khối ${loaiDonVi} đã đủ quota đề cử cho Quý này (${total.daNop}/${total.quota}). Liên hệ PTVH nếu cần điều chỉnh.`;
+  } else {
+    hintEl.className = 'loaidonvi-quota-hint';
+  }
 });
 
 prefillEmailDomain(document.getElementById('emailNguoiDeXuat'));
