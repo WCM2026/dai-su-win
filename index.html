@@ -110,6 +110,25 @@
   .rc-values { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:4px; }
   .rc-values .cv-tag { background:linear-gradient(135deg,#FFF6E0,#FFEAC2); border:1px solid #FFD98A; color:#7A5200; font-size:11.5px; font-weight:700; padding:5px 12px; border-radius:99px; }
   .review-candidate .review-section:last-child p { margin-bottom:0; }
+
+  /* Tra cứu tiến trình đề cử theo MSNV (công khai, không cần đăng nhập) */
+  .track-toggle { display:flex; align-items:center; justify-content:space-between; cursor:pointer; font-size:15px; font-weight:800; color:var(--navy); user-select:none; }
+  .track-toggle-arrow { transition:transform .25s ease; color:var(--muted); font-size:13px; }
+  .track-toggle.open .track-toggle-arrow { transform:rotate(180deg); }
+  .track-body { margin-top:16px; }
+  .track-body.hidden { display:none; }
+  .track-body textarea { width:100%; padding:10px 14px; border:1.5px solid var(--br); border-radius:9px; font-size:13.5px; font-family:inherit; margin-bottom:12px; resize:vertical; min-height:56px; color:var(--tx); }
+  .track-body button { width:auto; padding:10px 22px; font-size:13.5px; }
+  .track-result-item { border:1.5px solid var(--br); border-radius:10px; padding:14px 16px; margin-top:12px; }
+  .track-result-name { font-weight:800; font-size:14.5px; color:var(--ink); margin-bottom:2px; }
+  .track-result-meta { font-size:12px; color:var(--muted); margin-bottom:9px; }
+  .track-stage { display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:700; padding:5px 12px; border-radius:99px; }
+  .track-stage.s1 { background:var(--warn-bg); color:var(--warn); }
+  .track-stage.s2 { background:rgba(0,87,184,.12); color:var(--bm); }
+  .track-stage.s3 { background:var(--ok-bg); color:var(--ok); }
+  .track-stage.sneg { background:var(--err-bg); color:var(--err); }
+  .track-reason { margin-top:9px; font-size:12.5px; color:#4b5568; background:#F5F8FF; border-radius:8px; padding:9px 11px; line-height:1.5; }
+  .track-notfound { font-size:12.5px; color:var(--muted); margin-top:12px; }
 </style>
 </head>
 <body>
@@ -120,6 +139,19 @@
       <div class="dsw-logo"><img src="https://s3.hn-2.cloud.cmctelecom.vn/rop/prod/UploadFile/2026/07/02/2026070214080186231910f253.png" alt="Đại sứ WIN"></div>
     </div>
     <h1>Đề cử Đại sứ WIN</h1>
+  </div>
+
+  <div class="card" id="trackCard">
+    <div class="track-toggle" id="trackToggle">
+      <span>🔍 Tra cứu tiến trình đề cử đã nộp</span>
+      <span class="track-toggle-arrow">▾</span>
+    </div>
+    <div class="track-body hidden" id="trackBody">
+      <div class="hint" style="margin-top:0;">Nhập Mã số nhân viên (MSNV) của (các) ứng viên đã được đề cử để xem tiến trình xử lý. Có thể nhập nhiều MSNV cùng lúc — cách nhau bằng dấu phẩy hoặc mỗi MSNV 1 dòng.</div>
+      <textarea id="trackInput" placeholder="VD: 6328312, 7001234&#10;hoặc mỗi MSNV 1 dòng"></textarea>
+      <button type="button" class="btn-ghost" id="trackBtn">Tra cứu</button>
+      <div id="trackResults"></div>
+    </div>
   </div>
 
   <form id="nominationForm">
@@ -612,6 +644,61 @@ document.getElementById('btnConfirmSubmit').onclick = async () => {
     btn.disabled = false;
     btn.textContent = candidates.length > 1 ? `✅ Xác nhận gửi ${candidates.length} đề cử` : '✅ Xác nhận gửi đề cử';
   }
+};
+
+// ---------- Tra cứu tiến trình đề cử theo MSNV (công khai) ----------
+document.getElementById('trackToggle').onclick = () => {
+  document.getElementById('trackToggle').classList.toggle('open');
+  document.getElementById('trackBody').classList.toggle('hidden');
+};
+
+function trackStageClass(stage) {
+  if (stage === 1) return 's1';
+  if (stage === 2) return 's2';
+  if (stage === 3) return 's3';
+  if (stage === -1) return 'sneg';
+  return '';
+}
+function trackStageIcon(stage) {
+  if (stage === 1) return '🟡';
+  if (stage === 2) return '🔵';
+  if (stage === 3) return '✅';
+  if (stage === -1) return '❌';
+  return 'ℹ️';
+}
+
+document.getElementById('trackBtn').onclick = async () => {
+  const btn = document.getElementById('trackBtn');
+  const input = document.getElementById('trackInput').value.trim();
+  const resultsEl = document.getElementById('trackResults');
+  if (!input) { resultsEl.innerHTML = '<div class="track-notfound">Vui lòng nhập ít nhất 1 Mã số nhân viên.</div>'; return; }
+  btn.disabled = true;
+  const originalLabel = btn.textContent;
+  btn.textContent = 'Đang tra cứu...';
+  resultsEl.innerHTML = '';
+  try {
+    const res = await Api.trackByMsnv(input);
+    if (!res.success) {
+      resultsEl.innerHTML = `<div class="track-notfound">${esc(res.message)}</div>`;
+    } else if (!res.items.length) {
+      resultsEl.innerHTML = '<div class="track-notfound">Không tìm thấy đề cử nào ứng với (các) MSNV đã nhập.</div>';
+    } else {
+      const itemsHtml = res.items.map(i => `
+        <div class="track-result-item">
+          <div class="track-result-name">${esc(i.hoTenUngVien)} <span style="font-weight:400;color:var(--muted);font-size:12px;">(MSNV ${esc(i.maNV)})</span></div>
+          <div class="track-result-meta">${esc(i.tenDonVi)} · ${esc(i.quy)}${i.thoiGianNop ? ' · nộp ' + new Date(i.thoiGianNop).toLocaleDateString('vi-VN') : ''}</div>
+          <span class="track-stage ${trackStageClass(i.stage)}">${trackStageIcon(i.stage)} ${esc(i.stageLabel)}</span>
+          ${i.lyDoTuChoi ? `<div class="track-reason"><b>Lý do:</b> ${esc(i.lyDoTuChoi)}</div>` : ''}
+        </div>`).join('');
+      const notFoundHtml = (res.notFound && res.notFound.length)
+        ? `<div class="track-notfound">Không tìm thấy đề cử với MSNV: ${res.notFound.map(esc).join(', ')}</div>` : '';
+      resultsEl.innerHTML = itemsHtml + notFoundHtml;
+    }
+  } catch (err) {
+    resultsEl.innerHTML = `<div class="track-notfound">Lỗi kết nối, vui lòng thử lại: ${esc(err.message)}</div>`;
+  }
+  btn.disabled = false;
+  btn.textContent = originalLabel;
 };
 </script>
 </body>

@@ -176,8 +176,10 @@ const Api = {
   getDeptList: (loaiDonVi) => jsonp('deptList', { loaiDonVi }),
   getDeptStats: (token, quy) => jsonp('deptStats', { token, quy: quy || 'all' }),
 
-  // Tra cứu nhân sự theo MSNV (sheet DSNS)
+  // Tra cứu MSNV (sheet DSNS)
   lookupEmployee: (maNV, quy) => jsonp('lookupEmployee', { maNV, quy: quy || '' }),
+  // Tra cứu tiến trình đề cử theo MSNV (công khai, không cần đăng nhập) — hỗ trợ nhiều MSNV cùng lúc
+  trackByMsnv: (maNVList) => jsonp('trackByMsnv', { maNVList }),
   checkClientKey: (clientKey) => jsonp('checkClientKey', { clientKey }),
   getVersion: () => jsonp('version'),
 
