@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Đề cử Đại sứ WIN</title>
+<title>Phiếu đề cử Đại sứ WIN</title>
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -129,6 +129,23 @@
   .track-stage.sneg { background:var(--err-bg); color:var(--err); }
   .track-reason { margin-top:9px; font-size:12.5px; color:#4b5568; background:#F5F8FF; border-radius:8px; padding:9px 11px; line-height:1.5; }
   .track-notfound { font-size:12.5px; color:var(--muted); margin-top:12px; }
+
+  /* Quota đăng ký theo đơn vị — gấp gọn trong thẻ Quý đang mở đăng ký */
+  .quota-toggle { display:flex; align-items:center; justify-content:space-between; cursor:pointer; font-size:12.5px; font-weight:700; color:var(--bm); margin-top:12px; user-select:none; }
+  .quota-toggle-arrow { transition:transform .25s ease; font-size:11px; }
+  .quota-toggle.open .quota-toggle-arrow { transform:rotate(180deg); }
+  .quota-body { margin-top:10px; max-height:0; overflow:hidden; transition:max-height .3s ease; }
+  .quota-body.open { max-height:1200px; }
+  .quota-group { margin-bottom:10px; }
+  .quota-group-title { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.4px; color:var(--muted); margin-bottom:5px; }
+  .quota-row { display:flex; align-items:center; justify-content:space-between; padding:6px 10px; border-radius:7px; font-size:12.5px; margin-bottom:3px; }
+  .quota-row.available { background:#F5F8FF; }
+  .quota-row.full { background:var(--err-bg); }
+  .quota-row-name { color:var(--tx); }
+  .quota-row-count { font-family:'Space Mono',monospace; font-weight:700; font-size:12px; }
+  .quota-row.available .quota-row-count { color:var(--ok); }
+  .quota-row.full .quota-row-count { color:var(--err); }
+  .quota-loading { font-size:12px; color:var(--muted); }
 </style>
 </head>
 <body>
@@ -138,7 +155,7 @@
       <div class="logo-badge"><img src="https://datax-talent.basecdn.net/winmart/logo.png" alt="WinCommerce"></div>
       <div class="dsw-logo"><img src="https://s3.hn-2.cloud.cmctelecom.vn/rop/prod/UploadFile/2026/07/02/2026070214080186231910f253.png" alt="Đại sứ WIN"></div>
     </div>
-    <h1>Đề cử Đại sứ WIN</h1>
+    <h1>Phiếu đề cử Đại sứ WIN</h1>
   </div>
 
   <div class="card" id="trackCard">
@@ -158,6 +175,14 @@
     <div class="card" id="quarterCard">
       <h2>Quý đang mở đăng ký</h2>
       <div id="quarterInfo" class="quarter-info">Đang kiểm tra Quý đang mở...</div>
+
+      <div class="quota-toggle" id="quotaToggle">
+        <span>📊 Quota đăng ký theo đơn vị (đã nộp / còn lại)</span>
+        <span class="quota-toggle-arrow">▾</span>
+      </div>
+      <div class="quota-body" id="quotaBody">
+        <div class="quota-loading" id="quotaContent">Bấm để tải dữ liệu...</div>
+      </div>
     </div>
 
     <div class="card">
@@ -243,6 +268,43 @@ Api.getVersion().then(res => {
   if (res && res.success) { el.textContent = res.version; }
   else { el.textContent = '(không lấy được — có thể do lỗi kết nối)'; }
 }).catch(() => { document.getElementById('backendVersion').textContent = '(không kết nối được tới backend)'; });
+
+// ---------- Quota đăng ký theo đơn vị (gấp gọn, chỉ tải dữ liệu khi mở lần đầu) ----------
+let quotaLoaded = false;
+document.getElementById('quotaToggle').onclick = async () => {
+  const toggle = document.getElementById('quotaToggle');
+  const body = document.getElementById('quotaBody');
+  toggle.classList.toggle('open');
+  body.classList.toggle('open');
+  if (quotaLoaded || !body.classList.contains('open')) return;
+  if (!activeQuarter) {
+    document.getElementById('quotaContent').textContent = 'Chưa có Quý nào đang mở để xem quota.';
+    return;
+  }
+  quotaLoaded = true;
+  try {
+    const res = await Api.getQuotaOverview(activeQuarter.MaQuy);
+    const content = document.getElementById('quotaContent');
+    if (!res.success || !res.items.length) {
+      content.textContent = 'Chưa có dữ liệu quota cho Quý này.';
+      return;
+    }
+    const groups = {};
+    res.items.forEach(i => { (groups[i.loaiDonVi] = groups[i.loaiDonVi] || []).push(i); });
+    content.innerHTML = Object.keys(groups).map(loai => `
+      <div class="quota-group">
+        <div class="quota-group-title">${esc(loai)}</div>
+        ${groups[loai].map(i => `
+          <div class="quota-row ${i.conLai > 0 ? 'available' : 'full'}">
+            <span class="quota-row-name">${esc(i.tenKhoiPhong)}</span>
+            <span class="quota-row-count">${i.daNop}/${i.quota} · còn ${i.conLai}</span>
+          </div>`).join('')}
+      </div>`).join('');
+  } catch (err) {
+    document.getElementById('quotaContent').textContent = 'Không tải được dữ liệu quota, vui lòng thử lại.';
+    quotaLoaded = false;
+  }
+};
 
 Api.getActiveQuarter().then(res => {
   const el = document.getElementById('quarterInfo');
