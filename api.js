@@ -158,6 +158,10 @@ const Api = {
   getPipeline: (token, quy) => jsonp('pipeline', { token, quy }),
   getDetail: (token, id) => jsonp('detail', { token, id }),
   decide: (token, id, approved, lyDo) => jsonp('decide', { token, id, approved: approved ? 'true' : 'false', lyDo: lyDo || '' }),
+  // HRBP (đúng phạm vi) hoặc Admin chỉnh sửa nội dung đề cử khi còn ở bước "Chờ HRBP duyệt".
+  // Dùng form-POST (như submitNomination) thay vì JSONP vì nội dung Bối cảnh/Hành động/Kết quả có
+  // thể là đoạn văn dài, dễ vượt giới hạn độ dài URL nếu gửi qua JSONP (query string).
+  updateNomination: (token, id, fields) => postForm(Object.assign({ action: 'updateNomination', token, id }, fields)),
 
   // Quarters
   getQuarters: () => jsonp('quarters'),
