@@ -83,7 +83,7 @@
         </div>
       </div>
       <div class="reason-box">
-        <b>HRBP yêu cầu bổ sung/chỉnh sửa</b>
+        <b id="cLyDoLabel">HRBP yêu cầu bổ sung/chỉnh sửa</b>
         <span id="cLyDo">—</span>
       </div>
     </div>
@@ -170,7 +170,9 @@ async function init() {
   const it = res.item, story = res.story;
   document.getElementById('cTen').textContent = it.hoTenUngVien;
   document.getElementById('cMeta').textContent = `${it.tenDonVi} · MSNV ${it.maNV || '—'} · ${it.chucDanh || '—'}`;
-  document.getElementById('cLyDo').textContent = it.lyDoYeuCauChinhSua || '(HRBP không ghi lý do cụ thể)';
+  const nguoiYeuCau = it.chinhSuaTuBuoc === 'GDVH' ? 'GĐVH' : 'HRBP';
+  document.getElementById('cLyDoLabel').textContent = `${nguoiYeuCau} yêu cầu bổ sung/chỉnh sửa`;
+  document.getElementById('cLyDo').textContent = it.lyDoYeuCauChinhSua || `(${nguoiYeuCau} không ghi lý do cụ thể)`;
 
   const fileId = extractDriveFileId(it.anhChanDungURL);
   if (fileId) {

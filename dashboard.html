@@ -152,6 +152,19 @@
   .edit-cv-list input[type=checkbox] { width:15px; height:15px; margin:0; }
   .edit-actions { display:flex; gap:10px; margin-top:6px; }
   .edit-actions button { flex:1; }
+
+  /* Lịch sử/luồng xét duyệt — hiển thị toàn bộ quá trình xét duyệt của 1 đề cử */
+  .timeline { margin:0 0 20px; padding:0; list-style:none; }
+  .timeline-item { position:relative; padding:0 0 16px 26px; border-left:2px solid var(--br); }
+  .timeline-item:last-child { border-left-color:transparent; padding-bottom:0; }
+  .timeline-item::before { content:''; position:absolute; left:-6px; top:2px; width:10px; height:10px; border-radius:50%; background:var(--bm); border:2px solid #fff; box-shadow:0 0 0 1.5px var(--bm); }
+  .timeline-item.reject::before { background:var(--ng); box-shadow:0 0 0 1.5px var(--ng); }
+  .timeline-item.edit::before { background:var(--wn); box-shadow:0 0 0 1.5px var(--wn); }
+  .timeline-item.final::before { background:var(--ac); box-shadow:0 0 0 1.5px var(--ac); }
+  .timeline-head { font-size:13px; font-weight:700; color:var(--ink); }
+  .timeline-head .buoc { color:var(--navy); }
+  .timeline-meta { font-size:11.5px; color:var(--muted); margin-top:2px; }
+  .timeline-reason { font-size:12.5px; color:#4b5568; background:#F5F8FF; border-radius:8px; padding:8px 10px; margin-top:6px; line-height:1.5; }
 </style>
 </head>
 <body>
@@ -198,7 +211,7 @@
     </div>
     <div class="scope-note" style="margin-bottom:8px;">💡 Bấm vào 1 dòng để xem chi tiết đề cử và xét duyệt. Đề cử <b>đang chờ duyệt</b> được đánh dấu nổi bật và luôn hiển thị lên đầu danh sách.</div>
     <table>
-      <thead><tr><th>Ứng viên</th><th>Đơn vị</th><th>Người đề xuất</th><th>Trạng thái</th><th>HRBP phê duyệt</th><th>Ngày nộp</th></tr></thead>
+      <thead><tr><th>Ứng viên</th><th>Đơn vị</th><th>Người viết đề cử</th><th>Trạng thái</th><th>HRBP · GĐVH duyệt</th><th>Ngày nộp</th></tr></thead>
       <tbody id="rows"><tr><td colspan="6" class="loading">Đang tải...</td></tr></tbody>
     </table>
   </div>
@@ -223,10 +236,12 @@
             <dt>Chức danh</dt><dd id="mChucDanh">—</dd>
             <dt>Ngày vào Tập đoàn</dt><dd id="mNgayVao">—</dd>
             <dt>Đơn vị</dt><dd id="mDonVi">—</dd>
-            <dt>CBLĐ khối phòng</dt><dd id="mNguoiDeXuat">—</dd>
             <dt>Người viết đề cử</dt><dd id="mNguoiVietDeCu">—</dd>
             <dt>Trạng thái</dt><dd><span class="badge" id="mTrangThai">—</span></dd>
+            <dt>CBLĐ khối phòng</dt><dd id="mNguoiDeXuat">—</dd>
             <dt>HRBP phê duyệt</dt><dd id="mNguoiDuyet">—</dd>
+            <dt>GĐVH phê duyệt</dt><dd id="mGdvhDuyet">—</dd>
+            <dt>GĐ Khối phê duyệt</dt><dd id="mGdDuyet">—</dd>
           </dl>
         </div>
         <div style="text-align:center;">
@@ -236,6 +251,11 @@
       </div>
 
       <div class="hidden" id="editReqNote" style="background:var(--warn-bg);color:var(--warn);border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:16px;"></div>
+
+      <div class="story-section">
+        <h3>🕘 Luồng xét duyệt</h3>
+        <ul class="timeline" id="mTimeline"></ul>
+      </div>
 
       <div class="story-section"><h3>Bối cảnh</h3><p id="mBoiCanh">—</p></div>
       <div class="story-section"><h3>Hành động / đóng góp</h3><p id="mHanhDong">—</p></div>
@@ -326,8 +346,8 @@ function renderPipeline(p) {
   const today = new Date(p.today);
   const steps = [
     { title: 'Bước 1 · Đơn vị đề cử', deadline: p.hanB1, count: `${p.b1_daNop} đã nộp` },
-    { title: 'Bước 2 · HRBP tổng hợp', deadline: p.hanB2, count: `${p.b2_choHRBP} đang chờ` },
-    { title: 'Bước 3 · Phê duyệt & vinh danh', deadline: p.hanB3, count: `${p.b3_choGD} chờ GĐ · ${p.hoanTat} đã vinh danh` }
+    { title: 'Bước 2 · HRBP xét duyệt', deadline: p.hanB2, count: `${p.b2_choHRBP} đang chờ${p.b2b_choGDVH ? ` · ${p.b2b_choGDVH} chờ GĐVH` : ''}` },
+    { title: 'Bước 3 · Phê duyệt & Đề cử thành công', deadline: p.hanB3, count: `${p.b3_choGD} chờ GĐ · ${p.hoanTat} thành công` }
   ];
   let doneCount = 0, activeCount = 0;
   const stepsHtml = steps.map((s, i) => {
@@ -369,7 +389,7 @@ async function loadDeptTree() {
       <div class="dept-group-body">
         ${items.map(d => `<div class="dept-item ${d.SoLuong === 0 ? 'zero' : ''}">
           <span class="dept-item-name">${d.TenKhoiPhong}</span>
-          <span class="dept-item-count">${d.SoLuong}${d.DaVinhDanh ? ` <span style="color:var(--ok);font-weight:400;">(${d.DaVinhDanh} vinh danh)</span>` : ''}</span>
+          <span class="dept-item-count">${d.SoLuong}${d.DaVinhDanh ? ` <span style="color:var(--ok);font-weight:400;">(${d.DaVinhDanh} thành công)</span>` : ''}</span>
         </div>`).join('')}
       </div>
     </div>`;
@@ -389,7 +409,7 @@ async function loadAll() {
   document.getElementById('statsRow').innerHTML = `
     <div class="stat-card"><div class="num">${stats.total}</div><div class="label">Tổng đề cử</div></div>
     <div class="stat-card gold"><div class="num">${stats.pending}</div><div class="label">Đang chờ duyệt</div></div>
-    <div class="stat-card green"><div class="num">${stats.honored}</div><div class="label">Đã vinh danh</div></div>
+    <div class="stat-card green"><div class="num">${stats.honored}</div><div class="label">Đề cử thành công</div></div>
     <div class="stat-card red"><div class="num">${stats.rejected}</div><div class="label">Từ chối</div></div>`;
 
   renderPipeline(pipeline);
@@ -413,10 +433,11 @@ async function loadAll() {
 
   document.getElementById('rows').innerHTML = sorted.length ? sorted.map(r => {
     const isPending = String(r.TrangThai || '').startsWith('Chờ') || r.TrangThai === 'Yêu cầu chỉnh sửa';
+    const nguoiDuyetCell = [r.HRBPNguoiDuyet, r.GDVHNguoiDuyet].filter(Boolean).join(' · ') || '—';
     return `<tr onclick="openDetail('${r.ID}')" class="${isPending ? 'row-pending' : ''}">
-      <td>${isPending ? '<span class="pending-dot"></span>' : ''}${r.HoTenUngVien}</td><td>${r.TenDonVi}</td><td>${r.NguoiDeXuat}</td>
+      <td>${isPending ? '<span class="pending-dot"></span>' : ''}${r.HoTenUngVien}</td><td>${r.TenDonVi}</td><td>${r.NguoiVietDeCu || r.NguoiDeXuat || '—'}</td>
       <td><span class="badge ${badgeClass(r.TrangThai)}">${displayStatus(r.TrangThai)}</span></td>
-      <td>${r.HRBPNguoiDuyet || '—'}</td>
+      <td>${nguoiDuyetCell}</td>
       <td>${r.ThoiGianNop ? new Date(r.ThoiGianNop).toLocaleDateString('vi-VN') : ''}</td>
     </tr>`;
   }).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--tm);padding:20px;">Không có đề cử nào.</td></tr>';
@@ -460,6 +481,31 @@ function setImageWithFallback(img, candidates, onAllFailed) {
   img.src = candidates[0];
 }
 
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+}
+
+// Hiển thị toàn bộ luồng xét duyệt (nộp / CBLĐ duyệt / HRBP duyệt / GĐ Khối duyệt / yêu cầu chỉnh
+// sửa / nộp lại...) đọc từ nhật ký LichSuDuyet (JSON) — để ai xem cũng thấy được đề cử đã đi qua
+// những bước nào, ai xử lý, khi nào.
+function renderTimeline(history) {
+  const el = document.getElementById('mTimeline');
+  if (!history || !history.length) {
+    el.innerHTML = '<li class="timeline-item"><div class="timeline-meta">Chưa có dữ liệu lịch sử xét duyệt (đề cử được nộp trước khi có tính năng này).</div></li>';
+    return;
+  }
+  el.innerHTML = history.map((h, i) => {
+    const isLast = i === history.length - 1;
+    const cls = h.hanhDong === 'Từ chối' ? 'reject' : h.hanhDong === 'Yêu cầu chỉnh sửa' ? 'edit' : (isLast && (h.hanhDong === 'Phê duyệt cuối')) ? 'final' : '';
+    const time = h.thoiGian ? new Date(h.thoiGian).toLocaleString('vi-VN') : '';
+    return `<li class="timeline-item ${cls}">
+      <div class="timeline-head"><span class="buoc">${esc(h.buoc)}</span> — ${esc(h.hanhDong)}${h.nguoi ? ' · ' + esc(h.nguoi) : ''}</div>
+      <div class="timeline-meta">${time}</div>
+      ${h.lyDo ? `<div class="timeline-reason">${esc(h.lyDo)}</div>` : ''}
+    </li>`;
+  }).join('');
+}
+
 async function openDetail(id) {
   currentDetailId = id;
   document.getElementById('modalOverlay').classList.remove('hidden');
@@ -477,19 +523,24 @@ async function openDetail(id) {
   document.getElementById('mChucDanh').textContent = it.ChucDanh;
   document.getElementById('mNgayVao').textContent = it.NgayVaoTapDoan ? new Date(it.NgayVaoTapDoan).toLocaleDateString('vi-VN') : '—';
   document.getElementById('mDonVi').textContent = `${it.TenDonVi} (${it.LoaiDonVi} · ${it.MienVung_Khoi})`;
-  document.getElementById('mNguoiDeXuat').textContent = it.NguoiDeXuat;
   document.getElementById('mNguoiVietDeCu').textContent = it.NguoiVietDeCu ? `${it.NguoiVietDeCu} (${it.EmailNguoiVietDeCu || ''})` : '—';
   const badge = document.getElementById('mTrangThai');
   badge.textContent = displayStatus(it.TrangThai); badge.className = 'badge ' + badgeClass(it.TrangThai);
+  document.getElementById('mNguoiDeXuat').textContent = it.NguoiDeXuat ? `${it.NguoiDeXuat} (${it.EmailNguoiDeXuat || ''})` : '—';
   document.getElementById('mNguoiDuyet').textContent = it.HRBPNguoiDuyet || '—';
+  document.getElementById('mGdvhDuyet').textContent = it.GDVHNguoiDuyet ? `${it.GDVHNguoiDuyet}${it.GDVHQuyetDinh ? ' · ' + it.GDVHQuyetDinh : ''}` : (it.LoaiDonVi === 'WinMart' ? 'Chưa duyệt' : 'Không áp dụng');
+  document.getElementById('mGdDuyet').textContent = it.GDNguoiDuyet || '—';
 
   const editReqNote = document.getElementById('editReqNote');
   if (it.TrangThai === 'Yêu cầu chỉnh sửa' && it.LyDoYeuCauChinhSua) {
+    const nguoiYeuCau = it.ChinhSuaTuBuoc === 'GDVH' ? 'GĐVH' : 'HRBP';
     editReqNote.classList.remove('hidden');
-    editReqNote.textContent = `✏️ Đã yêu cầu chỉnh sửa: ${it.LyDoYeuCauChinhSua} — đang chờ Người viết đề cử nộp lại.`;
+    editReqNote.textContent = `✏️ ${nguoiYeuCau} đã yêu cầu chỉnh sửa: ${it.LyDoYeuCauChinhSua} — đang chờ Người viết đề cử nộp lại.`;
   } else {
     editReqNote.classList.add('hidden');
   }
+
+  renderTimeline(res.lichSuDuyet || []);
 
   const img = document.getElementById('mAnh');
   const link = document.getElementById('mAnhLink');
@@ -660,7 +711,8 @@ document.getElementById('btnSaveEdit').onclick = async () => {
 
 // ---------- Init ----------
 (async function init() {
-  document.getElementById('whoami').textContent = `${session.hoTen || session.email} · ${session.role === 'admin' ? 'Admin' : 'HRBP'}`;
+  const roleLabel = session.role === 'admin' ? 'Admin' : session.role === 'hrbp' ? 'HRBP' : session.role === 'gdvh' ? 'GĐVH' : session.role;
+  document.getElementById('whoami').textContent = `${session.hoTen || session.email} · ${roleLabel}`;
   if (session.role === 'admin') document.getElementById('adminLink').style.display = 'inline-block';
   await loadQuarters();
   await loadAll();

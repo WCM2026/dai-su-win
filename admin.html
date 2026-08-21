@@ -72,6 +72,7 @@
   .role-badge { padding:4px 10px; border-radius:99px; font-size:11px; font-weight:700; }
   .role-admin { background:#EEF2FA; color:var(--navy); }
   .role-hrbp { background:rgba(0,87,184,.12); color:var(--bm); }
+  .role-gdvh { background:rgba(255,184,0,.16); color:var(--warn); }
   .status-ok { color:var(--ok); font-weight:700; font-size:12px; }
   .status-pending { color:var(--warn); font-weight:700; font-size:12px; }
   .row-remove { width:auto; background:none; border:1px solid rgba(245,59,59,.3); color:var(--red); padding:5px 12px; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer; }
@@ -126,7 +127,7 @@
             <input id="newHan2" type="date">
           </div>
           <div>
-            <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;">🅑3 Hạn phê duyệt & vinh danh</label>
+            <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;">🅑3 Hạn phê duyệt & đề cử thành công</label>
             <input id="newHan3" type="date">
           </div>
           <button class="btn secondary" id="addQuarterBtn" style="align-self:flex-end;">+ Thêm Quý</button>
@@ -141,7 +142,7 @@
           <h2>Người dùng được cấp quyền</h2>
           <a class="btn secondary" style="text-decoration:none;" id="sheetLinkUsers" target="_blank">📄 Mở trong Google Sheet (sửa hàng loạt)</a>
         </div>
-        <div class="scope-note" style="margin-bottom:12px;">HRBP chỉ xem/duyệt được đề cử thuộc phạm vi được gán. VD phạm vi: <code>SSC</code> hoặc <code>WinMart Miền Bắc</code> (nhiều phạm vi cách nhau bằng dấu phẩy, khớp với tên trong danh mục Khối/Phòng). Nếu cần thêm/sửa nhiều người cùng lúc, dùng nút "Mở trong Google Sheet" ở trên sẽ nhanh hơn.</div>
+        <div class="scope-note" style="margin-bottom:12px;">HRBP (bước duyệt đầu tiên) và GĐVH (bước duyệt thứ 2, chỉ áp dụng cho đề cử chuỗi WinMart) chỉ xem/duyệt được đề cử thuộc phạm vi được gán. VD phạm vi: <code>SSC</code> hoặc <code>WinMart Miền Bắc</code> (nhiều phạm vi cách nhau bằng dấu phẩy, khớp với tên trong danh mục Khối/Phòng). Nếu cần thêm/sửa nhiều người cùng lúc, dùng nút "Mở trong Google Sheet" ở trên sẽ nhanh hơn.</div>
         <div class="users-table-wrap">
           <table class="users-table">
             <thead><tr><th>Họ và tên</th><th>Email</th><th>Vai trò</th><th>Phạm vi phụ trách</th><th>Trạng thái</th><th></th></tr></thead>
@@ -151,7 +152,7 @@
         <div class="add-row">
           <input id="newUserName" placeholder="Họ và tên" style="min-width:160px;">
           <input id="newUserEmail" placeholder="ten@winmart.masangroup.com" style="min-width:220px;">
-          <select id="newUserRole"><option value="hrbp">HRBP</option><option value="admin">Admin</option></select>
+          <select id="newUserRole"><option value="hrbp">HRBP</option><option value="gdvh">GĐVH (Giám đốc vận hành Chuỗi — chỉ WinMart)</option><option value="admin">Admin</option></select>
           <input id="newUserScope" placeholder="Phạm vi phụ trách (VD: SSC)" style="min-width:200px;">
           <button class="btn secondary" id="addUserBtn">+ Thêm người dùng</button>
         </div>
@@ -168,7 +169,7 @@
         <div class="scope-note" style="margin:-6px 0 10px;">Khối/Phòng tô đỏ = <b>chưa nộp đề cử</b> nào trong Quý này</div>
         <select class="quarter-select" id="deptQuarterSelect"></select>
         <table>
-          <thead><tr><th>Loại đơn vị</th><th>Khối / Phòng / Miền / Vùng</th><th>Số đề cử đã nộp</th><th>Đã vinh danh</th></tr></thead>
+          <thead><tr><th>Loại đơn vị</th><th>Khối / Phòng / Miền / Vùng</th><th>Số đề cử đã nộp</th><th>Đề cử thành công</th></tr></thead>
           <tbody id="deptRows"><tr><td colspan="4" class="loading">Đang tải...</td></tr></tbody>
         </table>
       </div>
@@ -217,7 +218,7 @@ async function loadQuarters() {
       <div class="scope-note">
         🅑1 Hạn đơn vị đề cử: <b>${fmtDate(q.HanB1_DonViDeCu)}</b> &nbsp;·&nbsp;
         🅑2 Hạn HRBP tổng hợp: <b>${fmtDate(q.HanB2_HRBPTongHop)}</b> &nbsp;·&nbsp;
-        🅑3 Hạn phê duyệt & vinh danh: <b>${fmtDate(q.HanB3_PheDuyet)}</b>
+        🅑3 Hạn phê duyệt & đề cử thành công: <b>${fmtDate(q.HanB3_PheDuyet)}</b>
       </div>
     </div>`;
   }).join('');
@@ -261,7 +262,7 @@ async function loadUsers() {
     <tr>
       <td><b>${esc(u.HoTen) || '(chưa có tên)'}</b></td>
       <td>${esc(u.Email)}</td>
-      <td><span class="role-badge ${u.Role === 'admin' ? 'role-admin' : 'role-hrbp'}">${u.Role === 'admin' ? 'Admin' : 'HRBP'}</span></td>
+      <td><span class="role-badge ${u.Role === 'admin' ? 'role-admin' : u.Role === 'hrbp' ? 'role-hrbp' : 'role-gdvh'}">${u.Role === 'admin' ? 'Admin' : u.Role === 'hrbp' ? 'HRBP' : u.Role === 'gdvh' ? 'GĐVH' : esc(u.Role)}</span></td>
       <td>${esc(u.PhamViPhuTrach) || '—'}</td>
       <td>${u.CoMatKhau ? '<span class="status-ok">● Đã kích hoạt</span>' : '<span class="status-pending">● Chưa đăng nhập lần đầu</span>'}</td>
       <td><button class="row-remove" onclick="removeUser('${esc(u.Email)}')">✕ Xóa</button></td>

@@ -588,8 +588,8 @@ function collectSharedFields() {
     loaiDonVi: document.getElementById('loaiDonVi').value,
     mienVungKhoi: document.getElementById('mienVungKhoi').value,
     tenDonVi: document.getElementById('tenDonVi').value,
-    nguoiDeXuat: document.getElementById('nguoiDeXuat').value, // CBLĐ khối phòng
-    emailNguoiDeXuat: document.getElementById('emailCBLD').value, // Email CBLĐ
+    nguoiDeXuat: document.getElementById('nguoiDeXuat').value,
+    emailNguoiDeXuat: document.getElementById('emailCBLD').value,
     nguoiVietDeCu: document.getElementById('nguoiVietDeCu').value,
     emailNguoiVietDeCu: document.getElementById('emailNguoiVietDeCu').value
   };
@@ -766,19 +766,21 @@ document.getElementById('trackToggle').onclick = () => {
   document.getElementById('trackBody').classList.toggle('hidden');
 };
 
-function trackStageClass(stage) {
-  if (stage === 1) return 's1';
-  if (stage === 2) return 's2';
-  if (stage === 3) return 's3';
+// Số bước khác nhau theo chuỗi (WinMart 4 bước có thêm GĐVH, MiniMart/SSC 3 bước) — so sánh với
+// `total` (trả về cùng item, xem stageOfTrangThai() phía backend) thay vì số cố định, để luôn tô
+// đúng màu "hoàn tất" (bước cuối) dù tổng số bước khác nhau. Tái dùng đúng 3 màu sẵn có (s1 vàng/mới
+// bắt đầu, s2 xanh dương/đang xử lý tiếp, s3 xanh lá/hoàn tất) để không cần thêm CSS mới.
+function trackStageClass(stage, total) {
   if (stage === -1) return 'sneg';
-  return '';
+  if (stage >= total) return 's3';
+  if (stage === 1) return 's1';
+  return 's2';
 }
-function trackStageIcon(stage) {
-  if (stage === 1) return '🟡';
-  if (stage === 2) return '🔵';
-  if (stage === 3) return '✅';
+function trackStageIcon(stage, total) {
   if (stage === -1) return '❌';
-  return 'ℹ️';
+  if (stage >= total) return '✅';
+  if (stage === 1) return '🟡';
+  return '🔵';
 }
 
 document.getElementById('trackBtn').onclick = async () => {
@@ -801,7 +803,7 @@ document.getElementById('trackBtn').onclick = async () => {
         <div class="track-result-item">
           <div class="track-result-name">${esc(i.hoTenUngVien)} <span style="font-weight:400;color:var(--muted);font-size:12px;">(MSNV ${esc(i.maNV)})</span></div>
           <div class="track-result-meta">${esc(i.tenDonVi)} · ${esc(i.quy)}${i.thoiGianNop ? ' · nộp ' + new Date(i.thoiGianNop).toLocaleDateString('vi-VN') : ''}</div>
-          <span class="track-stage ${trackStageClass(i.stage)}">${trackStageIcon(i.stage)} ${esc(i.stageLabel)}</span>
+          <span class="track-stage ${trackStageClass(i.stage, i.totalSteps)}">${trackStageIcon(i.stage, i.totalSteps)} ${esc(i.stageLabel)}</span>
           ${i.lyDoTuChoi ? `<div class="track-reason"><b>Lý do:</b> ${esc(i.lyDoTuChoi)}</div>` : ''}
         </div>`).join('');
       const notFoundHtml = (res.notFound && res.notFound.length)
