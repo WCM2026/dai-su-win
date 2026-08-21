@@ -201,6 +201,9 @@ const Api = {
 
   // Tra cứu MSNV (sheet DSNS)
   lookupEmployee: (maNV, quy) => jsonp('lookupEmployee', { maNV, quy: quy || '' }),
+  // Kiểm tra MSNV có được phép nộp đề cử cho chuỗi WinMart/MiniMart hay không (SSC luôn cho phép).
+  // Dùng ở bước "cổng" trên index.html trước khi mở khóa phần còn lại của form.
+  checkSubmitterAllowed: (maNV, loaiDonVi) => jsonp('checkSubmitterAllowed', { maNV, loaiDonVi }),
   // Tra cứu tiến trình đề cử theo MSNV (công khai, không cần đăng nhập) — hỗ trợ nhiều MSNV cùng lúc
   trackByMsnv: (maNVList) => jsonp('trackByMsnv', { maNVList }),
   // Quota đăng ký theo đơn vị trong 1 Quý (công khai, không cần đăng nhập)

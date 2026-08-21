@@ -157,6 +157,18 @@
           <button class="btn secondary" id="addUserBtn">+ Thêm người dùng</button>
         </div>
       </div>
+
+      <div class="panel" style="margin-top:16px;">
+        <div class="panel-head">
+          <h2>Danh sách được phép nộp đề cử (WinMart / MiniMart)</h2>
+          <a class="btn secondary" style="text-decoration:none;" id="sheetLinkAllowedSubmitters" target="_blank">📄 Mở trong Google Sheet</a>
+        </div>
+        <div class="scope-note">
+          Chỉ áp dụng cho <b>WinMart</b> và <b>MiniMart</b> — SSC không giới hạn, ai cũng nộp được như trước. Trên trang nộp đề cử, người nộp phải nhập đúng MSNV có trong danh sách này thì mới điền tiếp được.
+          Quản lý trực tiếp trong sheet <code>DanhSachDuocPhepNop</code> (bấm nút bên trên để mở), gồm các cột:
+          <code>MSNV</code> (bắt buộc), <code>HoTen</code> (để tự điền sẵn "Người viết đề cử"), <code>LoaiDonVi</code> (ghi <code>WinMart</code>, <code>MiniMart</code>, hoặc cả 2 cách nhau bằng dấu phẩy nếu 1 người được nộp cho cả 2 chuỗi), <code>GhiChu</code> (tuỳ chọn).
+        </div>
+      </div>
     </div>
 
     <!-- Tab 3: Thống kê Khối/Phòng -->
@@ -302,6 +314,7 @@ async function init() {
   document.getElementById('sheetLinkQuarters').href = SPREADSHEET_URL;
   document.getElementById('sheetLinkUsers').href = SPREADSHEET_URL;
   document.getElementById('sheetLinkDepts').href = SPREADSHEET_URL;
+  document.getElementById('sheetLinkAllowedSubmitters').href = SPREADSHEET_URL;
   prefillEmailDomain(document.getElementById('newUserEmail'));
   await loadQuarters();
   await loadUsers(); // Trước đây danh sách người dùng không load vì hàm này chưa từng được gọi

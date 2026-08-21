@@ -148,6 +148,18 @@
   .loaidonvi-quota-hint { font-size:12px; margin:-8px 0 14px; padding:6px 10px; border-radius:7px; display:none; }
   .loaidonvi-quota-hint.available { display:block; background:var(--ok-bg); color:var(--ok); }
   .loaidonvi-quota-hint.full { display:block; background:var(--err-bg); color:var(--err); }
+
+  /* Cổng kiểm tra MSNV được phép nộp đề cử (chỉ WinMart/MiniMart) */
+  .gate-box { border:1.5px dashed var(--a2); border-radius:10px; padding:16px 18px; margin-bottom:16px; background:rgba(255,107,53,.06); }
+  .gate-box .gate-title { font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:var(--a2); margin:0 0 8px; }
+  .gate-row { display:flex; gap:10px; align-items:flex-start; }
+  .gate-row input { margin-bottom:0; }
+  .gate-row button { width:auto; padding:10px 20px; white-space:nowrap; }
+  .gate-msg { font-size:13px; font-weight:600; margin-top:10px; }
+  .gate-msg.ok { color:var(--ok); }
+  .gate-msg.err { color:var(--err); }
+  .gate-verified-badge { display:inline-flex; align-items:center; gap:6px; background:var(--ok-bg); color:var(--ok); font-size:12.5px; font-weight:700; padding:6px 12px; border-radius:99px; margin-bottom:16px; }
+  .hidden { display:none !important; }
 </style>
 </head>
 <body>
@@ -212,22 +224,40 @@
       <input type="text" id="nguoiDeXuat" required>
       <label>Email CBLĐ</label>
       <input type="text" id="emailCBLD" required>
-      <label>Người viết đề cử</label>
-      <div class="hint">Admin/đại diện Khối phòng — người trực tiếp nhập thông tin đề cử, sẽ nhận email khi cần bổ sung/chỉnh sửa</div>
-      <input type="text" id="nguoiVietDeCu" required>
-      <label>Email người viết đề cử</label>
-      <input type="text" id="emailNguoiVietDeCu" required>
+
+      <div class="gate-box hidden" id="submitterGateBox">
+        <div class="gate-title">🔒 Kiểm tra quyền nộp đề cử</div>
+        <div class="hint" style="margin-bottom:12px;">WinMart và MiniMart chỉ những người có tên trong danh sách được phép mới nộp được đề cử. Nhập Mã số nhân viên (MSNV) của bạn để hệ thống kiểm tra trước khi tiếp tục.</div>
+        <label style="color:var(--a2);">Mã số nhân viên (MSNV) của bạn</label>
+        <div class="gate-row">
+          <input type="text" id="gateMsnv" placeholder="VD: 123456">
+          <button type="button" id="btnCheckGate">Xác nhận</button>
+        </div>
+        <div class="gate-msg" id="gateMsg"></div>
+      </div>
+
+      <div class="hidden" id="submitterFieldsBox">
+        <div class="gate-verified-badge hidden" id="gateVerifiedBadge">✅ Đã xác thực quyền nộp đề cử</div>
+        <label>Người viết đề cử</label>
+        <div class="hint">Admin/đại diện Khối phòng — người trực tiếp nhập thông tin đề cử, sẽ nhận email khi cần bổ sung/chỉnh sửa</div>
+        <input type="text" id="nguoiVietDeCu" required>
+        <label>Email người viết đề cử</label>
+        <input type="text" id="emailNguoiVietDeCu" required>
+        <input type="hidden" id="msnvNguoiVietDeCu" value="">
+      </div>
     </div>
 
-    <div class="card">
-      <h2>2-4. Ứng viên đề cử</h2>
-      <div class="candidates-hint">Có thể đề cử tối đa 3 ứng viên trong 1 lượt gửi — mỗi ứng viên sẽ được HRBP xem xét độc lập. Nhập Mã số nhân viên và bấm <b>Tìm</b> để hệ thống tự động hiển thị Họ tên / Chức danh / Ngày vào Tập đoàn (không thể tự nhập).</div>
-      <div id="candidatesContainer"></div>
-      <button type="button" class="add-candidate-btn" id="addCandidateBtn">+ Thêm ứng viên (tối đa 3)</button>
-    </div>
+    <div id="formRestSections" class="hidden">
+      <div class="card">
+        <h2>2-4. Ứng viên đề cử</h2>
+        <div class="candidates-hint">Có thể đề cử tối đa 3 ứng viên trong 1 lượt gửi — mỗi ứng viên sẽ được HRBP xem xét độc lập. Nhập Mã số nhân viên và bấm <b>Tìm</b> để hệ thống tự động hiển thị Họ tên / Chức danh / Ngày vào Tập đoàn (không thể tự nhập).</div>
+        <div id="candidatesContainer"></div>
+        <button type="button" class="add-candidate-btn" id="addCandidateBtn">+ Thêm ứng viên (tối đa 3)</button>
+      </div>
 
-    <button type="submit" id="submitBtn">Xem lại & Gửi đề cử</button>
-    <div id="status"></div>
+      <button type="submit" id="submitBtn">Xem lại & Gửi đề cử</button>
+      <div id="status"></div>
+    </div>
   </form>
   <div style="text-align:center;font-size:10.5px;color:var(--muted);margin-top:18px;font-family:'Space Mono',monospace;">Phiên bản backend: <span id="backendVersion">đang kiểm tra...</span></div>
 </div>
@@ -351,12 +381,96 @@ Api.getActiveQuarter().then(res => {
   }
 });
 
+// ---------- Cổng kiểm tra quyền nộp đề cử (chỉ WinMart/MiniMart — SSC không giới hạn) ----------
+// Người dùng nhập MSNV, hệ thống kiểm tra đúng trong danh sách được phép nộp cho ĐÚNG chuỗi vừa
+// chọn, rồi mới cho tiếp tục điền phần còn lại của phiếu (Người viết đề cử + Ứng viên đề cử).
+let gateVerifiedFor = null; // { loaiDonVi, msnv } khi đã xác thực thành công cho chuỗi hiện tại
+
+function applySubmitterGate(loaiDonVi) {
+  const gateBox = document.getElementById('submitterGateBox');
+  const fieldsBox = document.getElementById('submitterFieldsBox');
+  const restBox = document.getElementById('formRestSections');
+  const nguoiVietDeCu = document.getElementById('nguoiVietDeCu');
+  const emailNguoiVietDeCu = document.getElementById('emailNguoiVietDeCu');
+
+  const needsGate = (loaiDonVi === 'WinMart' || loaiDonVi === 'MiniMart');
+  const alreadyVerified = needsGate && gateVerifiedFor && gateVerifiedFor.loaiDonVi === loaiDonVi;
+
+  if (!loaiDonVi) {
+    // Chưa chọn Loại đơn vị — chưa có gì để điền tiếp, ẩn hết.
+    gateBox.classList.add('hidden');
+    fieldsBox.classList.add('hidden');
+    restBox.classList.add('hidden');
+    nguoiVietDeCu.required = false;
+    emailNguoiVietDeCu.required = false;
+    return;
+  }
+
+  if (needsGate && !alreadyVerified) {
+    gateBox.classList.remove('hidden');
+    fieldsBox.classList.add('hidden');
+    restBox.classList.add('hidden');
+    nguoiVietDeCu.required = false;
+    emailNguoiVietDeCu.required = false;
+    nguoiVietDeCu.value = '';
+    document.getElementById('msnvNguoiVietDeCu').value = '';
+    document.getElementById('gateMsg').className = 'gate-msg';
+    document.getElementById('gateMsg').textContent = '';
+    document.getElementById('gateVerifiedBadge').classList.add('hidden');
+  } else {
+    gateBox.classList.add('hidden');
+    fieldsBox.classList.remove('hidden');
+    restBox.classList.remove('hidden');
+    nguoiVietDeCu.required = true;
+    emailNguoiVietDeCu.required = true;
+    document.getElementById('gateVerifiedBadge').classList.toggle('hidden', !needsGate);
+  }
+}
+
+document.getElementById('btnCheckGate').onclick = async () => {
+  const loaiDonVi = document.getElementById('loaiDonVi').value;
+  const msnv = document.getElementById('gateMsnv').value.trim();
+  const msg = document.getElementById('gateMsg');
+  const btn = document.getElementById('btnCheckGate');
+  if (!msnv) { msg.className = 'gate-msg err'; msg.textContent = 'Vui lòng nhập MSNV.'; return; }
+  const original = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Đang kiểm tra...';
+  msg.className = 'gate-msg';
+  msg.textContent = '';
+  try {
+    const res = await Api.checkSubmitterAllowed(msnv, loaiDonVi);
+    if (!res.success) {
+      msg.className = 'gate-msg err';
+      msg.textContent = res.message || 'Có lỗi khi kiểm tra, vui lòng thử lại.';
+      return;
+    }
+    if (!res.allowed) {
+      msg.className = 'gate-msg err';
+      msg.textContent = res.message || 'MSNV này không được phép nộp đề cử cho chuỗi này.';
+      return;
+    }
+    // Đã xác thực thành công — mở khóa phần còn lại của phiếu.
+    gateVerifiedFor = { loaiDonVi, msnv };
+    document.getElementById('msnvNguoiVietDeCu').value = msnv;
+    if (res.hoTen) document.getElementById('nguoiVietDeCu').value = res.hoTen;
+    applySubmitterGate(loaiDonVi);
+  } catch (err) {
+    msg.className = 'gate-msg err';
+    msg.textContent = 'Lỗi kết nối, vui lòng thử lại: ' + err.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = original;
+  }
+};
+
 // Nạp danh sách Miền/Vùng/Khối-Phòng theo Loại đơn vị đã chọn (theo danh mục chuẩn công ty),
 // đồng thời hiển thị dòng nhỏ báo quota còn lại của TỔNG Loại đơn vị vừa chọn cho Quý này.
 document.getElementById('loaiDonVi').addEventListener('change', async function(e) {
   const sel = document.getElementById('mienVungKhoi');
   const loaiDonVi = e.target.value;
   const hintEl = document.getElementById('loaiDonViQuotaHint');
+  applySubmitterGate(loaiDonVi);
   if (!loaiDonVi) {
     sel.innerHTML = '<option value="">-- Chọn Loại đơn vị trước --</option>';
     hintEl.className = 'loaidonvi-quota-hint';
@@ -591,7 +705,8 @@ function collectSharedFields() {
     nguoiDeXuat: document.getElementById('nguoiDeXuat').value,
     emailNguoiDeXuat: document.getElementById('emailCBLD').value,
     nguoiVietDeCu: document.getElementById('nguoiVietDeCu').value,
-    emailNguoiVietDeCu: document.getElementById('emailNguoiVietDeCu').value
+    emailNguoiVietDeCu: document.getElementById('emailNguoiVietDeCu').value,
+    msnvNguoiVietDeCu: document.getElementById('msnvNguoiVietDeCu').value
   };
 }
 
@@ -663,6 +778,12 @@ function openReview(shared, candidates) {
 document.getElementById('nominationForm').addEventListener('submit', function(e) {
   e.preventDefault();
   if (!activeQuarter) { alert('Hiện không có Quý nào đang mở đăng ký.'); return; }
+  const loaiDonVi = document.getElementById('loaiDonVi').value;
+  const gateOk = (loaiDonVi !== 'WinMart' && loaiDonVi !== 'MiniMart') || (gateVerifiedFor && gateVerifiedFor.loaiDonVi === loaiDonVi);
+  if (!gateOk) {
+    alert('Vui lòng nhập MSNV và bấm "Xác nhận" ở mục kiểm tra quyền nộp đề cử trước khi tiếp tục.');
+    return;
+  }
   const blocks = Array.from(document.querySelectorAll('.candidate-block'));
   if (!blocks.length) { alert('Vui lòng thêm ít nhất 1 ứng viên.'); return; }
   const missing = blocks.findIndex(b => !b._employeeInfo || !b._employeeInfo.hoTen);
