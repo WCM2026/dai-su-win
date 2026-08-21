@@ -71,23 +71,23 @@
     <h1>Đăng nhập</h1>
     <div id="msg" class="msg"></div>
 
-    <!-- Bước 1: nhập email -> chọn OTP (lần đầu) hoặc mật khẩu (đã có) -->
+    <!-- Bước 1: chỉ nhập email -> hệ thống tự kiểm tra đã có mật khẩu chưa và chuyển đúng bước -->
     <div class="step active" id="stepEmail">
       <label>Email công ty</label>
       <input type="text" id="email" placeholder="ten@winmart.masangroup.com">
-      <button id="btnPassword">Đăng nhập bằng mật khẩu</button>
-      <div class="link" id="linkOtp">Chưa có mật khẩu? Nhận mã OTP qua email</div>
+      <button id="btnContinue">Tiếp tục</button>
     </div>
 
-    <!-- Bước 2a: đăng nhập bằng mật khẩu -->
+    <!-- Bước 2a: đã có mật khẩu -> đăng nhập bằng mật khẩu -->
     <div class="step" id="stepPassword">
       <label>Mật khẩu</label>
       <input type="password" id="password">
       <button id="btnDoLogin">Đăng nhập</button>
+      <div class="link" id="linkForgot">Quên mật khẩu? Nhận mã OTP để đặt lại</div>
       <div class="link" id="linkBack1">← Quay lại</div>
     </div>
 
-    <!-- Bước 2b: OTP lần đầu -->
+    <!-- Bước 2b: chưa có mật khẩu (lần đầu) hoặc đang đặt lại mật khẩu -->
     <div class="step" id="stepOtp">
       <label>Mã OTP đã gửi tới email</label>
       <input type="text" id="otp" placeholder="6 chữ số">
@@ -106,36 +106,76 @@ function showMsg(text, ok) {
   el.textContent = text;
   el.className = 'msg ' + (ok ? 'ok' : 'err');
 }
+function clearMsg() {
+  const el = document.getElementById('msg');
+  el.textContent = '';
+  el.className = 'msg';
+}
 function showStep(id) {
   document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
 }
+function withBusy(btn, label, fn) {
+  return async () => {
+    const original = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = label;
+    try { await fn(); }
+    finally { btn.disabled = false; btn.textContent = original; }
+  };
+}
 
 prefillEmailDomain(document.getElementById('email'));
 
-document.getElementById('btnPassword').onclick = () => showStep('stepPassword');
-document.getElementById('linkBack1').onclick = () => showStep('stepEmail');
-document.getElementById('linkBack2').onclick = () => showStep('stepEmail');
+document.getElementById('linkBack1').onclick = () => { showStep('stepEmail'); clearMsg(); };
+document.getElementById('linkBack2').onclick = () => { showStep('stepEmail'); clearMsg(); };
 
-document.getElementById('linkOtp').onclick = async () => {
+// Bước 1: chỉ nhập email. Hệ thống tự kiểm tra tài khoản đã có mật khẩu chưa để chuyển đúng bước —
+// lần đầu (chưa có mật khẩu) tự động gửi OTP luôn, không bắt người dùng thử mật khẩu rồi mới báo lỗi.
+document.getElementById('btnContinue').onclick = withBusy(document.getElementById('btnContinue'), 'Đang kiểm tra...', async () => {
+  const email = document.getElementById('email').value.trim();
+  if (!email) return showMsg('Vui lòng nhập email.', false);
+  const status = await Api.checkAccountStatus(email);
+  if (!status.success) return showMsg(status.message, false);
+
+  if (status.hasPassword) {
+    clearMsg();
+    showStep('stepPassword');
+    setTimeout(() => document.getElementById('password').focus(), 0);
+    return;
+  }
+
+  // Chưa có mật khẩu -> đây là lần đăng nhập đầu tiên, tự động gửi OTP luôn.
+  const res = await Api.requestOtp(email);
+  if (!res.success) return showMsg(res.message, false);
+  showMsg('Lần đầu đăng nhập — đã gửi mã OTP tới email để bạn tạo mật khẩu.', true);
+  showStep('stepOtp');
+});
+
+// Quên mật khẩu: gửi lại OTP để đặt mật khẩu mới, dùng chung màn hình OTP với luồng lần đầu.
+document.getElementById('linkForgot').onclick = async () => {
   const email = document.getElementById('email').value.trim();
   if (!email) return showMsg('Vui lòng nhập email trước.', false);
   const res = await Api.requestOtp(email);
-  showMsg(res.message, res.success);
+  showMsg(res.success ? 'Đã gửi mã OTP để đặt lại mật khẩu.' : res.message, res.success);
   if (res.success) showStep('stepOtp');
 };
 
-document.getElementById('btnSetPassword').onclick = async () => {
+document.getElementById('btnSetPassword').onclick = withBusy(document.getElementById('btnSetPassword'), 'Đang xác nhận...', async () => {
   const email = document.getElementById('email').value.trim();
   const otp = document.getElementById('otp').value.trim();
   const newPassword = document.getElementById('newPassword').value;
   if (newPassword.length < 6) return showMsg('Mật khẩu tối thiểu 6 ký tự.', false);
   const res = await Api.verifyOtpSetPassword(email, otp, newPassword);
   showMsg(res.message, res.success);
-  if (res.success) { showStep('stepPassword'); document.getElementById('password').value = ''; }
-};
+  if (res.success) {
+    showStep('stepPassword');
+    document.getElementById('password').value = '';
+    setTimeout(() => document.getElementById('password').focus(), 0);
+  }
+});
 
-document.getElementById('btnDoLogin').onclick = async () => {
+document.getElementById('btnDoLogin').onclick = withBusy(document.getElementById('btnDoLogin'), 'Đang đăng nhập...', async () => {
   const email = document.getElementById('email').value.trim();
   const password = document.getElementById('password').value;
   const res = await Api.login(email, password);
@@ -145,7 +185,7 @@ document.getElementById('btnDoLogin').onclick = async () => {
   } else {
     showMsg(res.message, false);
   }
-};
+});
 </script>
 </body>
 </html>

@@ -156,6 +156,16 @@
   .edit-cv-list label { display:flex; align-items:center; gap:6px; font-size:12.5px; font-weight:600; text-transform:none; letter-spacing:normal; color:var(--tx); background:#F5F8FF; padding:7px 14px; border-radius:99px; margin:0; cursor:pointer; }
   .edit-cv-list input[type=checkbox] { width:15px; height:15px; margin:0; }
   .edit-actions { display:flex; gap:10px; margin-top:6px; }
+
+  /* Admin: đổi trạng thái đề cử (ghi đè) */
+  .admin-stage-panel { padding:16px 18px; margin-top:16px; border:1.5px dashed var(--a2); border-radius:10px; background:rgba(255,107,53,.06); }
+  .admin-stage-title { font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:var(--a2); margin:0 0 10px; display:flex; align-items:center; gap:8px; }
+  .admin-stage-panel select, .admin-stage-panel textarea {
+    width:100%; padding:9px 12px; border:1.5px solid var(--br); border-radius:8px; font-size:13.5px; font-family:inherit; color:var(--tx); margin-bottom:10px; box-sizing:border-box; outline:none; transition:.2s;
+  }
+  .admin-stage-panel textarea { min-height:60px; resize:vertical; }
+  .admin-stage-panel select:focus, .admin-stage-panel textarea:focus { border-color:var(--a2); box-shadow:0 0 0 3px rgba(255,107,53,.12); }
+  .admin-stage-toggle-row { margin-top:14px; }
   .edit-actions button { flex:1; }
 
   /* Lịch sử/luồng xét duyệt — hiển thị toàn bộ quá trình xét duyệt của 1 đề cử */
@@ -318,6 +328,23 @@
         </div>
       </div>
       <div class="decide-msg" id="decideMsg"></div>
+
+      <div class="edit-toggle-row hidden" id="adminStageToggleRow" style="margin-top:16px;">
+        <button class="btn ghost" type="button" id="btnAdminStage" style="border-color:var(--a2);color:var(--a2);">🛠️ Admin: Đổi trạng thái đề cử</button>
+      </div>
+      <div class="admin-stage-panel hidden" id="adminStagePanel">
+        <div class="admin-stage-title">🛠️ Admin: Đổi trạng thái đề cử (ghi đè)</div>
+        <div class="scope-note" style="margin:-4px 0 14px;">Dùng để sửa sai sót quy trình (vd. lỡ phê duyệt/từ chối nhầm). Thao tác này ghi đè trực tiếp, KHÔNG gửi email thông báo cho các bên liên quan, và luôn được ghi vào nhật ký xét duyệt bên trên.</div>
+        <label style="display:block;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--a2);margin-bottom:6px;">Chuyển sang trạng thái</label>
+        <select id="adminStageSelect"></select>
+        <label style="display:block;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--a2);margin-bottom:6px;">Lý do đổi trạng thái (bắt buộc)</label>
+        <textarea id="adminStageReason" placeholder="VD: HRBP bấm nhầm nút Duyệt, cần đưa lại về đúng bước đang chờ xét duyệt."></textarea>
+        <div class="edit-actions">
+          <button class="btn" type="button" id="btnConfirmAdminStage" style="background:var(--a2);">✅ Áp dụng thay đổi</button>
+          <button class="btn ghost" type="button" id="btnCancelAdminStage">Hủy</button>
+        </div>
+        <div class="decide-msg" id="adminStageMsg"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -598,6 +625,17 @@ async function openDetail(id) {
   document.getElementById('editBox').classList.add('hidden');
   document.getElementById('editToggleRow').classList.toggle('hidden', !res.canEdit);
   document.getElementById('editMsg').className = 'decide-msg';
+
+  // Admin: bảng đổi trạng thái đề cử (ghi đè) — chỉ hiện khi Admin và còn ít nhất 1 trạng thái khác
+  // hợp lệ để chuyển sang (item đã ở trạng thái cuối cùng có thể không còn lựa chọn nào khác).
+  const revertableStages = res.revertableStages || [];
+  document.getElementById('adminStagePanel').classList.add('hidden');
+  document.getElementById('adminStageReason').value = '';
+  document.getElementById('adminStageMsg').className = 'decide-msg';
+  document.getElementById('adminStageMsg').textContent = '';
+  document.getElementById('adminStageToggleRow').classList.toggle('hidden', !(res.isAdmin && revertableStages.length));
+  document.getElementById('adminStageSelect').innerHTML = revertableStages
+    .map(s => `<option value="${esc(s)}">${esc(displayStatus(s))}</option>`).join('');
 }
 
 function closeDetail() {
@@ -687,6 +725,7 @@ function openEditBox() {
   document.getElementById('editMsg').textContent = '';
   document.getElementById('decisionBar').classList.add('hidden');
   document.getElementById('rejectBox').classList.add('hidden');
+  document.getElementById('adminStagePanel').classList.add('hidden');
   document.getElementById('editBox').classList.remove('hidden');
 }
 
@@ -701,6 +740,11 @@ document.getElementById('btnCancelEdit').onclick = () => closeEditBox(true);
 document.getElementById('btnSaveEdit').onclick = async () => {
   const btn = document.getElementById('btnSaveEdit');
   const msg = document.getElementById('editMsg');
+  const isFinalState = currentDetailItem && (currentDetailItem.TrangThai === 'Đã vinh danh' || currentDetailItem.TrangThai === 'Từ chối');
+  if (isFinalState) {
+    const ok = confirm(`Đề cử "${currentDetailItem.HoTenUngVien}" đã ở trạng thái cuối (${displayStatus(currentDetailItem.TrangThai)}).\n\nBạn có chắc chắn muốn chỉnh sửa nội dung hồ sơ đã hoàn tất này không?`);
+    if (!ok) return;
+  }
   const gtcl = Array.from(document.querySelectorAll('#eGtcl input:checked')).map(el => el.value).join(', ');
   const originalLabel = btn.textContent;
   btn.disabled = true;
@@ -727,6 +771,61 @@ document.getElementById('btnSaveEdit').onclick = async () => {
       document.getElementById('mGtcl').innerHTML = gtcl.split(',').map(s => s.trim()).filter(Boolean).map(v => `<span class="cv-tag">${v}</span>`).join('') || '<span style="color:var(--tm);font-size:13px;">Chưa chọn</span>';
       loadAll();
       setTimeout(() => closeEditBox(true), 900);
+    }
+  } catch (err) {
+    msg.className = 'decide-msg err';
+    msg.textContent = 'Lỗi kết nối, vui lòng thử lại: ' + err.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalLabel;
+  }
+};
+
+// ---------- Admin: đổi trạng thái đề cử (ghi đè) ----------
+document.getElementById('btnAdminStage').onclick = () => {
+  document.getElementById('decisionBar').classList.add('hidden');
+  document.getElementById('editBox').classList.add('hidden');
+  document.getElementById('adminStagePanel').classList.remove('hidden');
+  document.getElementById('adminStageReason').focus();
+};
+document.getElementById('btnCancelAdminStage').onclick = () => {
+  document.getElementById('adminStagePanel').classList.add('hidden');
+  if (currentDetailCanDecide) document.getElementById('decisionBar').classList.remove('hidden');
+};
+document.getElementById('btnConfirmAdminStage').onclick = async () => {
+  const btn = document.getElementById('btnConfirmAdminStage');
+  const msg = document.getElementById('adminStageMsg');
+  const newStage = document.getElementById('adminStageSelect').value;
+  const reason = document.getElementById('adminStageReason').value.trim();
+  if (!reason) {
+    msg.className = 'decide-msg err';
+    msg.textContent = 'Vui lòng nhập lý do đổi trạng thái.';
+    return;
+  }
+  const tenUngVien = (currentDetailItem && currentDetailItem.HoTenUngVien) || '';
+  const trangThaiCu = (currentDetailItem && currentDetailItem.TrangThai) || '';
+  // Popup xác nhận cuối cùng trước khi ghi đè trạng thái — đây là thao tác đổi trạng thái ngoài luồng
+  // xét duyệt bình thường nên luôn hỏi lại người dùng, tránh bấm nhầm.
+  const ok = confirm(
+    `Xác nhận đổi trạng thái đề cử "${tenUngVien}"?\n\n` +
+    `Từ: ${displayStatus(trangThaiCu)}\n` +
+    `Sang: ${displayStatus(newStage)}\n\n` +
+    `Thao tác này ghi đè trực tiếp, không gửi email thông báo, và sẽ được ghi vào nhật ký xét duyệt.`
+  );
+  if (!ok) return;
+
+  const originalLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Đang áp dụng...';
+  msg.className = 'decide-msg';
+  msg.textContent = '';
+  try {
+    const res = await Api.adminSetStage(session.token, currentDetailId, newStage, reason);
+    msg.className = 'decide-msg ' + (res.success ? 'ok' : 'err');
+    msg.textContent = res.message;
+    if (res.success) {
+      loadAll();
+      setTimeout(() => openDetail(currentDetailId), 900);
     }
   } catch (err) {
     msg.className = 'decide-msg err';

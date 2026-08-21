@@ -10,15 +10,27 @@ const EMAIL_DOMAIN = '@winmart.masangroup.com';
 
 // ---- JSONP: dùng cho các lệnh ĐỌC dữ liệu (không bị giới hạn CORS vì là <script> tag) ----
 let _jsonpCounter = 0;
-function jsonp(action, params = {}) {
+function jsonp(action, params = {}, timeoutMs = 20000) {
   return new Promise((resolve, reject) => {
     const cbName = `_cb_${Date.now()}_${_jsonpCounter++}`;
-    window[cbName] = (data) => { resolve(data); delete window[cbName]; script.remove(); };
+    let settled = false;
+    let timer = null;
+    function cleanup() { if (timer) clearTimeout(timer); delete window[cbName]; script.remove(); }
+    window[cbName] = (data) => { if (settled) return; settled = true; cleanup(); resolve(data); };
     const query = new URLSearchParams({ action, callback: cbName, ...params }).toString();
     const script = document.createElement('script');
     script.src = `${WEBAPP_URL}?${query}`;
-    script.onerror = () => reject(new Error('Không kết nối được tới hệ thống. Kiểm tra WEBAPP_URL.'));
+    script.onerror = () => { if (settled) return; settled = true; cleanup(); reject(new Error('Không kết nối được tới hệ thống. Kiểm tra kết nối mạng hoặc WEBAPP_URL.')); };
     document.body.appendChild(script);
+    // DỰ PHÒNG: một số trình duyệt/mạng công ty (ad-blocker, proxy chặn script.google.com) chặn
+    // request kiểu này mà KHÔNG kích hoạt onerror — nếu không có timeout thì Promise treo vĩnh viễn,
+    // khiến người dùng thấy màn hình "Đang tải..." mãi mãi mà không có bất kỳ thông báo lỗi nào.
+    timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      reject(new Error('Hết thời gian chờ phản hồi từ hệ thống — vui lòng kiểm tra kết nối mạng (có thể do trình duyệt/mạng công ty chặn script.google.com) rồi thử lại.'));
+    }, timeoutMs);
   });
 }
 
@@ -151,6 +163,7 @@ const Api = {
   requestOtp: (email) => jsonp('requestOtp', { email }),
   verifyOtpSetPassword: (email, otp, newPassword) => jsonp('verifyOtpSetPassword', { email, otp, newPassword }),
   login: (email, password) => jsonp('login', { email, password }),
+  checkAccountStatus: (email) => jsonp('checkAccountStatus', { email }),
 
   // Dashboard
   getData: (token, quy) => jsonp('data', { token, quy: quy || 'all' }),
@@ -165,6 +178,9 @@ const Api = {
   // HRBP (đúng phạm vi) hoặc Admin yêu cầu Người viết đề cử bổ sung/chỉnh sửa — gửi email kèm link
   // resubmit.html, KHÔNG còn tính là Từ chối.
   requestEdit: (token, id, lyDo) => jsonp('requestEdit', { token, id, lyDo }),
+  // Admin: đổi trạng thái đề cử (ghi đè ngoài luồng xét duyệt bình thường) — dùng để sửa sai sót,
+  // vd. lỡ phê duyệt nhầm cần đưa về lại đúng bước đang chờ xét duyệt. Bắt buộc có lý do.
+  adminSetStage: (token, id, newTrangThai, lyDo) => jsonp('adminSetStage', { token, id, newTrangThai, lyDo }),
 
   // Quarters
   getQuarters: () => jsonp('quarters'),
