@@ -227,23 +227,22 @@
 
       <div class="gate-box hidden" id="submitterGateBox">
         <div class="gate-title">🔒 Kiểm tra quyền nộp đề cử</div>
-        <div class="hint" style="margin-bottom:12px;">WinMart và MiniMart chỉ những người có tên trong danh sách được phép mới nộp được đề cử. Nhập Mã số nhân viên (MSNV) của bạn để hệ thống kiểm tra trước khi tiếp tục.</div>
-        <label style="color:var(--a2);">Mã số nhân viên (MSNV) của bạn</label>
+        <div class="hint" style="margin-bottom:12px;">WinMart và MiniMart chỉ những người có tên trong danh sách được phép mới nộp được đề cử. Nhập email của bạn để hệ thống kiểm tra trước khi tiếp tục.</div>
+        <label style="color:var(--a2);">Email của bạn</label>
         <div class="gate-row">
-          <input type="text" id="gateMsnv" placeholder="VD: 123456">
+          <input type="text" id="gateEmail" placeholder="ten@winmart.masangroup.com">
           <button type="button" id="btnCheckGate">Xác nhận</button>
         </div>
         <div class="gate-msg" id="gateMsg"></div>
       </div>
 
       <div class="hidden" id="submitterFieldsBox">
-        <div class="gate-verified-badge hidden" id="gateVerifiedBadge">✅ Đã xác thực quyền nộp đề cử</div>
+        <div class="gate-verified-badge hidden" id="gateVerifiedBadge">✅ Đã xác thực quyền nộp đề cử <span id="btnChangeGateEmail" style="text-decoration:underline;cursor:pointer;font-weight:700;margin-left:6px;">(đổi email)</span></div>
         <label>Người viết đề cử</label>
         <div class="hint">Admin/đại diện Khối phòng — người trực tiếp nhập thông tin đề cử, sẽ nhận email khi cần bổ sung/chỉnh sửa</div>
         <input type="text" id="nguoiVietDeCu" required>
         <label>Email người viết đề cử</label>
         <input type="text" id="emailNguoiVietDeCu" required>
-        <input type="hidden" id="msnvNguoiVietDeCu" value="">
       </div>
     </div>
 
@@ -382,9 +381,9 @@ Api.getActiveQuarter().then(res => {
 });
 
 // ---------- Cổng kiểm tra quyền nộp đề cử (chỉ WinMart/MiniMart — SSC không giới hạn) ----------
-// Người dùng nhập MSNV, hệ thống kiểm tra đúng trong danh sách được phép nộp cho ĐÚNG chuỗi vừa
+// Người dùng nhập EMAIL, hệ thống kiểm tra đúng trong danh sách được phép nộp cho ĐÚNG chuỗi vừa
 // chọn, rồi mới cho tiếp tục điền phần còn lại của phiếu (Người viết đề cử + Ứng viên đề cử).
-let gateVerifiedFor = null; // { loaiDonVi, msnv } khi đã xác thực thành công cho chuỗi hiện tại
+let gateVerifiedFor = null; // { loaiDonVi, email } khi đã xác thực thành công cho chuỗi hiện tại
 
 function applySubmitterGate(loaiDonVi) {
   const gateBox = document.getElementById('submitterGateBox');
@@ -412,8 +411,9 @@ function applySubmitterGate(loaiDonVi) {
     restBox.classList.add('hidden');
     nguoiVietDeCu.required = false;
     emailNguoiVietDeCu.required = false;
+    emailNguoiVietDeCu.readOnly = false;
     nguoiVietDeCu.value = '';
-    document.getElementById('msnvNguoiVietDeCu').value = '';
+    emailNguoiVietDeCu.value = '';
     document.getElementById('gateMsg').className = 'gate-msg';
     document.getElementById('gateMsg').textContent = '';
     document.getElementById('gateVerifiedBadge').classList.add('hidden');
@@ -423,23 +423,32 @@ function applySubmitterGate(loaiDonVi) {
     restBox.classList.remove('hidden');
     nguoiVietDeCu.required = true;
     emailNguoiVietDeCu.required = true;
+    // WinMart/MiniMart: khóa email lại sau khi xác thực — đây chính là email server sẽ đối chiếu
+    // lại với danh sách được phép nộp lúc Gửi đề cử, không cho gõ đổi tùy tiện sau khi đã xác thực.
+    emailNguoiVietDeCu.readOnly = needsGate;
     document.getElementById('gateVerifiedBadge').classList.toggle('hidden', !needsGate);
   }
 }
 
+// Cho phép đổi lại email đã xác thực (VD gõ nhầm) — quay lại màn hình cổng kiểm tra.
+document.getElementById('btnChangeGateEmail').onclick = () => {
+  gateVerifiedFor = null;
+  applySubmitterGate(document.getElementById('loaiDonVi').value);
+};
+
 document.getElementById('btnCheckGate').onclick = async () => {
   const loaiDonVi = document.getElementById('loaiDonVi').value;
-  const msnv = document.getElementById('gateMsnv').value.trim();
+  const email = document.getElementById('gateEmail').value.trim();
   const msg = document.getElementById('gateMsg');
   const btn = document.getElementById('btnCheckGate');
-  if (!msnv) { msg.className = 'gate-msg err'; msg.textContent = 'Vui lòng nhập MSNV.'; return; }
+  if (!email) { msg.className = 'gate-msg err'; msg.textContent = 'Vui lòng nhập email.'; return; }
   const original = btn.textContent;
   btn.disabled = true;
   btn.textContent = 'Đang kiểm tra...';
   msg.className = 'gate-msg';
   msg.textContent = '';
   try {
-    const res = await Api.checkSubmitterAllowed(msnv, loaiDonVi);
+    const res = await Api.checkSubmitterAllowed(email, loaiDonVi);
     if (!res.success) {
       msg.className = 'gate-msg err';
       msg.textContent = res.message || 'Có lỗi khi kiểm tra, vui lòng thử lại.';
@@ -447,12 +456,12 @@ document.getElementById('btnCheckGate').onclick = async () => {
     }
     if (!res.allowed) {
       msg.className = 'gate-msg err';
-      msg.textContent = res.message || 'MSNV này không được phép nộp đề cử cho chuỗi này.';
+      msg.textContent = res.message || 'Email này không được phép nộp đề cử cho chuỗi này.';
       return;
     }
     // Đã xác thực thành công — mở khóa phần còn lại của phiếu.
-    gateVerifiedFor = { loaiDonVi, msnv };
-    document.getElementById('msnvNguoiVietDeCu').value = msnv;
+    gateVerifiedFor = { loaiDonVi, email };
+    document.getElementById('emailNguoiVietDeCu').value = email;
     if (res.hoTen) document.getElementById('nguoiVietDeCu').value = res.hoTen;
     applySubmitterGate(loaiDonVi);
   } catch (err) {
@@ -496,6 +505,7 @@ document.getElementById('loaiDonVi').addEventListener('change', async function(e
 
 prefillEmailDomain(document.getElementById('emailCBLD'));
 prefillEmailDomain(document.getElementById('emailNguoiVietDeCu'));
+prefillEmailDomain(document.getElementById('gateEmail'));
 
 // ---------- Khối ứng viên (lặp lại, tối đa 3) ----------
 const CV_DETAILS = {
@@ -705,8 +715,7 @@ function collectSharedFields() {
     nguoiDeXuat: document.getElementById('nguoiDeXuat').value,
     emailNguoiDeXuat: document.getElementById('emailCBLD').value,
     nguoiVietDeCu: document.getElementById('nguoiVietDeCu').value,
-    emailNguoiVietDeCu: document.getElementById('emailNguoiVietDeCu').value,
-    msnvNguoiVietDeCu: document.getElementById('msnvNguoiVietDeCu').value
+    emailNguoiVietDeCu: document.getElementById('emailNguoiVietDeCu').value
   };
 }
 
