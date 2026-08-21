@@ -118,7 +118,12 @@
   .modal-head h2 { margin:4px 0; font-size:22px; font-weight:800; }
   .modal-head .sub { font-size:13px; color:rgba(255,255,255,.7); }
   .modal-close { background:rgba(255,255,255,.15); border:none; color:#fff; width:32px; height:32px; border-radius:50%; cursor:pointer; font-size:16px; flex-shrink:0; }
-  .modal-body { padding:24px 28px; }
+  .modal-body { padding:24px 28px; position:relative; min-height:120px; }
+  .modal-loading { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; padding:60px 20px; color:var(--muted); font-size:13.5px; font-weight:600; }
+  .modal-loading .spinner { width:34px; height:34px; border-radius:50%; border:3px solid var(--br); border-top-color:var(--bm); animation:spin .7s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .modal-body.is-loading > *:not(.modal-loading) { display:none !important; }
+  .modal-loading.hidden { display:none; }
   .detail-grid { display:grid; grid-template-columns:1fr 130px; gap:24px; margin-bottom:20px; }
   .detail-info dl { margin:0; display:grid; grid-template-columns:130px 1fr; gap:8px 12px; font-size:13px; }
   .detail-info dt { color:var(--muted); }
@@ -228,7 +233,11 @@
       </div>
       <button class="modal-close" id="modalClose">✕</button>
     </div>
-    <div class="modal-body">
+    <div class="modal-body" id="modalBody">
+      <div class="modal-loading hidden" id="modalLoading">
+        <div class="spinner"></div>
+        <div>Đang tải chi tiết đề cử...</div>
+      </div>
       <div class="detail-grid">
         <div class="detail-info">
           <dl>
@@ -510,7 +519,23 @@ async function openDetail(id) {
   currentDetailId = id;
   document.getElementById('modalOverlay').classList.remove('hidden');
   document.getElementById('decideMsg').className = 'decide-msg';
-  const res = await Api.getDetail(session.token, id);
+  const modalBody = document.getElementById('modalBody');
+  modalBody.classList.add('is-loading');
+  document.getElementById('modalLoading').classList.remove('hidden');
+  let res;
+  try {
+    res = await Api.getDetail(session.token, id);
+  } catch (err) {
+    modalBody.classList.remove('is-loading');
+    document.getElementById('modalLoading').classList.add('hidden');
+    alert('Không tải được chi tiết đề cử — vui lòng thử lại.');
+    closeDetail();
+    return;
+  }
+  // Nếu người dùng đã đóng modal hoặc mở đề cử khác trong lúc đang chờ, bỏ qua kết quả trễ này.
+  if (currentDetailId !== id) return;
+  modalBody.classList.remove('is-loading');
+  document.getElementById('modalLoading').classList.add('hidden');
   if (!res.success) { alert(res.message); closeDetail(); return; }
 
   const it = res.item, story = res.story;
@@ -575,7 +600,10 @@ async function openDetail(id) {
   document.getElementById('editMsg').className = 'decide-msg';
 }
 
-function closeDetail() { document.getElementById('modalOverlay').classList.add('hidden'); }
+function closeDetail() {
+  document.getElementById('modalOverlay').classList.add('hidden');
+  currentDetailId = null;
+}
 document.getElementById('modalClose').onclick = closeDetail;
 document.getElementById('modalOverlay').addEventListener('click', (e) => { if (e.target.id === 'modalOverlay') closeDetail(); });
 
