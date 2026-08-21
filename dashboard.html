@@ -198,8 +198,8 @@
     </div>
     <div class="scope-note" style="margin-bottom:8px;">💡 Bấm vào 1 dòng để xem chi tiết đề cử và xét duyệt. Đề cử <b>đang chờ duyệt</b> được đánh dấu nổi bật và luôn hiển thị lên đầu danh sách.</div>
     <table>
-      <thead><tr><th>Ứng viên</th><th>Đơn vị</th><th>Người đề xuất</th><th>Trạng thái</th><th>Ngày nộp</th></tr></thead>
-      <tbody id="rows"><tr><td colspan="5" class="loading">Đang tải...</td></tr></tbody>
+      <thead><tr><th>Ứng viên</th><th>Đơn vị</th><th>Người đề xuất</th><th>Trạng thái</th><th>HRBP phê duyệt</th><th>Ngày nộp</th></tr></thead>
+      <tbody id="rows"><tr><td colspan="6" class="loading">Đang tải...</td></tr></tbody>
     </table>
   </div>
 </div>
@@ -225,6 +225,7 @@
             <dt>Đơn vị</dt><dd id="mDonVi">—</dd>
             <dt>Người đề xuất</dt><dd id="mNguoiDeXuat">—</dd>
             <dt>Trạng thái</dt><dd><span class="badge" id="mTrangThai">—</span></dd>
+            <dt>HRBP phê duyệt</dt><dd id="mNguoiDuyet">—</dd>
           </dl>
         </div>
         <div style="text-align:center;">
@@ -289,6 +290,13 @@ let currentItems = [];
 document.getElementById('logoutBtn').onclick = () => { Session.clear(); window.location.href = 'login.html'; };
 
 function badgeClass(s) { if (s === 'Đã vinh danh') return 'b-ok'; if (s === 'Từ chối') return 'b-tuchoi'; return 'b-cho'; }
+// Nhãn hiển thị cho người dùng — tách khỏi giá trị TrangThai lưu trong Sheet (giữ nguyên để không
+// phá logic xử lý/lọc/pipeline đang so khớp theo đúng các chuỗi gốc này).
+function displayStatus(trangThai) {
+  if (trangThai === 'Chờ GĐ Khối duyệt') return 'Chờ PTVH nhận đề cử';
+  if (trangThai === 'Đã vinh danh') return 'Đề cử thành công';
+  return trangThai;
+}
 
 // ---------- Quý ----------
 async function loadQuarters() {
@@ -393,10 +401,11 @@ async function loadAll() {
     const isPending = String(r.TrangThai || '').startsWith('Chờ');
     return `<tr onclick="openDetail('${r.ID}')" class="${isPending ? 'row-pending' : ''}">
       <td>${isPending ? '<span class="pending-dot"></span>' : ''}${r.HoTenUngVien}</td><td>${r.TenDonVi}</td><td>${r.NguoiDeXuat}</td>
-      <td><span class="badge ${badgeClass(r.TrangThai)}">${r.TrangThai}</span></td>
+      <td><span class="badge ${badgeClass(r.TrangThai)}">${displayStatus(r.TrangThai)}</span></td>
+      <td>${r.HRBPNguoiDuyet || '—'}</td>
       <td>${r.ThoiGianNop ? new Date(r.ThoiGianNop).toLocaleDateString('vi-VN') : ''}</td>
     </tr>`;
-  }).join('') : '<tr><td colspan="5" style="text-align:center;color:var(--tm);padding:20px;">Không có đề cử nào.</td></tr>';
+  }).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--tm);padding:20px;">Không có đề cử nào.</td></tr>';
 }
 
 document.getElementById('quarterSelect').addEventListener('change', (e) => { currentQuarter = e.target.value; loadAll(); });
@@ -456,7 +465,8 @@ async function openDetail(id) {
   document.getElementById('mDonVi').textContent = `${it.TenDonVi} (${it.LoaiDonVi} · ${it.MienVung_Khoi})`;
   document.getElementById('mNguoiDeXuat').textContent = it.NguoiDeXuat;
   const badge = document.getElementById('mTrangThai');
-  badge.textContent = it.TrangThai; badge.className = 'badge ' + badgeClass(it.TrangThai);
+  badge.textContent = displayStatus(it.TrangThai); badge.className = 'badge ' + badgeClass(it.TrangThai);
+  document.getElementById('mNguoiDuyet').textContent = it.HRBPNguoiDuyet || '—';
 
   const img = document.getElementById('mAnh');
   const link = document.getElementById('mAnhLink');
