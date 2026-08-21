@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chỉnh sửa & nộp lại đề cử · Đại sứ WIN</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* ── Design tokens (theo Design Guideline WCM) ── */
+    --bd:#003087; --bm:#0057B8; --ac:#00C48C; --a2:#FF6B35; --wn:#FFB800;
+    --bg:#F0F4FA; --sf:#FFFFFF; --br:#DDE4F0;
+    --tx:#1A2340; --tm:#6B7A99; --ng:#F53B3B;
+    --r:12px; --sh:0 2px 16px rgba(0,48,135,.10);
+    --ok:#00875F; --ok-bg:rgba(0,196,140,.12);
+    --warn:#B87800; --warn-bg:rgba(255,184,0,.12);
+    --err:#B52020; --err-bg:rgba(245,59,59,.10);
+    --navy:var(--bd); --navy2:#001F6B; --gold:var(--wn); --red:var(--ng); --ink:var(--tx); --muted:var(--tm);
+  }
+  * { box-sizing:border-box; }
+  body { font-family:"Be Vietnam Pro",sans-serif; background:var(--bg); margin:0; padding:24px; color:var(--ink); }
+  .wrap { max-width:680px; margin:0 auto; }
+  .header { background:linear-gradient(135deg,#001F6B 0%,var(--navy) 45%,var(--bm) 100%); background-image:linear-gradient(135deg,#001F6B 0%,var(--navy) 45%,var(--bm) 100%),repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 2px,transparent 2px 30px),repeating-linear-gradient(-45deg,rgba(255,255,255,.05) 0 2px,transparent 2px 30px); color:#fff; border-radius:var(--r); padding:26px 30px 30px; margin-bottom:22px; box-shadow:0 10px 30px rgba(0,48,135,.28); border-bottom:3px solid var(--gold); }
+  .header-top { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
+  .header .eyebrow { color:var(--gold); font-weight:700; letter-spacing:.08em; font-size:13px; text-transform:uppercase; }
+  .header h1 { margin:0; font-size:24px; font-weight:800; letter-spacing:-.3px; }
+  .logo-badge { display:inline-flex; align-items:center; background:#fff; border-radius:8px; padding:5px 12px; }
+  .logo-badge img { height:20px; display:block; }
+  .dsw-logo { display:inline-flex; align-items:center; }
+  .dsw-logo img { height:48px; display:block; }
+  .card { background:var(--sf); border-radius:var(--r); padding:24px 28px; margin-bottom:16px; box-shadow:var(--sh); }
+  .card h2 { font-size:15px; font-weight:800; color:var(--navy); margin:0 0 16px; padding-bottom:10px; border-bottom:2px solid var(--br); }
+  .candidate-summary { display:flex; gap:16px; align-items:flex-start; margin-bottom:6px; }
+  .candidate-summary img { width:72px; height:72px; border-radius:10px; object-fit:cover; border:1px solid var(--br); background:#F5F8FF; flex-shrink:0; }
+  .candidate-summary .name { font-size:18px; font-weight:800; color:var(--ink); margin:0 0 4px; }
+  .candidate-summary .meta { font-size:13px; color:var(--muted); }
+  .reason-box { background:var(--warn-bg); color:var(--warn); border-radius:8px; padding:12px 14px; font-size:13.5px; line-height:1.5; margin-top:16px; }
+  .reason-box b { display:block; font-size:11px; text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px; }
+  label { display:block; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.4px; color:var(--bm); margin-bottom:6px; }
+  .hint { font-size:12px; color:var(--muted); margin-top:-4px; margin-bottom:8px; text-transform:none; letter-spacing:normal; font-weight:400; }
+  textarea, input[type=file] {
+    width:100%; padding:10px 14px; border:1.5px solid var(--br); border-radius:9px; font-size:14px; margin-bottom:16px; font-family:inherit; color:var(--tx); outline:none; transition:.2s; background:#fff;
+  }
+  textarea:focus { border-color:var(--bm); box-shadow:0 0 0 3px rgba(0,87,184,.1); }
+  textarea { min-height:90px; resize:vertical; }
+  .core-values label.cv { display:flex; align-items:center; gap:8px; font-weight:400; font-size:13px; margin:0; text-transform:none; letter-spacing:normal; color:var(--tx); }
+  .core-values input[type=checkbox] { width:16px; height:16px; margin:0; flex-shrink:0; }
+  .cv-item { background:#F5F8FF; border-radius:10px; margin-bottom:8px; padding:10px 12px; }
+  button { background:var(--bd); color:#fff; border:none; padding:13px 28px; border-radius:9px; font-size:15px; font-weight:700; cursor:pointer; width:100%; transition:transform .12s ease,box-shadow .12s ease; font-family:"Be Vietnam Pro",sans-serif; }
+  button:hover:not(:disabled) { background:var(--bm); transform:translateY(-1px); box-shadow:0 6px 16px rgba(0,48,135,.25); }
+  button:disabled { opacity:.6; cursor:not-allowed; }
+  #status { margin-top:14px; padding:12px 14px; border-radius:8px; font-size:14px; font-weight:600; display:none; }
+  #status.ok { background:var(--ok-bg); color:var(--ok); display:block; }
+  #status.err { background:var(--err-bg); color:var(--err); display:block; }
+  .file-preview { width:90px; height:90px; border-radius:8px; object-fit:cover; margin-top:8px; display:none; border:1px solid var(--br); }
+  .compress-note { font-size:12px; color:var(--ok); margin-top:-8px; margin-bottom:14px; display:none; }
+  .loading, .invalid { text-align:center; padding:30px; color:var(--muted); }
+  .invalid { color:var(--err); font-weight:600; }
+  .hidden { display:none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <div class="header-top">
+      <div class="logo-badge"><img src="https://datax-talent.basecdn.net/winmart/logo.png" alt="WinCommerce"></div>
+      <div class="dsw-logo"><img src="https://s3.hn-2.cloud.cmctelecom.vn/rop/prod/UploadFile/2026/07/02/2026070214080186231910f253.png" alt="Đại sứ WIN"></div>
+    </div>
+    <div class="eyebrow">Đại sứ WIN</div>
+    <h1>Chỉnh sửa & nộp lại đề cử</h1>
+  </div>
+
+  <div id="loadingBox" class="card"><div class="loading">Đang tải thông tin đề cử...</div></div>
+
+  <div id="content" class="hidden">
+    <div class="card">
+      <h2>Ứng viên</h2>
+      <div class="candidate-summary">
+        <img id="cPhoto" src="" alt="" class="hidden">
+        <div>
+          <div class="name" id="cTen">—</div>
+          <div class="meta" id="cMeta">—</div>
+        </div>
+      </div>
+      <div class="reason-box">
+        <b>HRBP yêu cầu bổ sung/chỉnh sửa</b>
+        <span id="cLyDo">—</span>
+      </div>
+    </div>
+
+    <form id="resubmitForm">
+      <div class="card">
+        <h2>Nội dung đề cử</h2>
+        <label>Bối cảnh</label>
+        <textarea id="boiCanh" required></textarea>
+        <label>Hành động / đóng góp</label>
+        <textarea id="hanhDong" required></textarea>
+        <label>Kết quả nhận được</label>
+        <textarea id="ketQua" required></textarea>
+
+        <label>Giá trị cốt lõi tương ứng</label>
+        <div class="core-values" id="cvList"></div>
+
+        <label style="margin-top:14px;">Ảnh chân dung mới (không bắt buộc)</label>
+        <div class="hint">Chỉ chọn nếu muốn thay ảnh hiện tại — bỏ trống nếu giữ nguyên ảnh cũ.</div>
+        <input type="file" id="anhChanDung" accept="image/*">
+        <img class="file-preview" id="preview">
+        <div class="compress-note" id="compressNote"></div>
+      </div>
+
+      <button type="submit" id="submitBtn">✅ Gửi lại đề cử đã chỉnh sửa</button>
+      <div id="status"></div>
+    </form>
+  </div>
+
+  <div id="invalidBox" class="card hidden"><div class="invalid" id="invalidMsg">Liên kết không hợp lệ.</div></div>
+</div>
+
+<script src="api.js"></script>
+<script>
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+}
+
+const params = new URLSearchParams(window.location.search);
+const id = params.get('id');
+const token = params.get('token');
+
+const CV_DETAILS = {
+  'WIN PHỤNG SỰ': 'Kiên định với hành trình phụng sự người tiêu dùng',
+  'WIN SÁNG TẠO': 'Kiên định tạo ra giá trị chuyển đổi',
+  'WIN TỰ CHỦ': 'Kiên định với tinh thần doanh nhân',
+  'WIN KIÊN ĐỊNH': 'Kiên định với tầm nhìn dài hạn',
+  'WIN KHÁT VỌNG': 'Kiên định với mục tiêu lý tưởng'
+};
+
+let imageBase64 = '';
+
+function showInvalid(msg) {
+  document.getElementById('loadingBox').classList.add('hidden');
+  document.getElementById('content').classList.add('hidden');
+  document.getElementById('invalidBox').classList.remove('hidden');
+  document.getElementById('invalidMsg').textContent = msg;
+}
+
+function extractDriveFileId(url) {
+  if (!url) return '';
+  const m = String(url).match(/[-\w]{25,}/);
+  return m ? m[0] : '';
+}
+function driveImageCandidates(fileId) {
+  return [
+    `https://lh3.googleusercontent.com/d/${fileId}`,
+    `https://drive.google.com/thumbnail?id=${fileId}&sz=w400`,
+    `https://drive.google.com/uc?export=view&id=${fileId}`
+  ];
+}
+
+async function init() {
+  if (!id || !token) { showInvalid('Thiếu thông tin liên kết. Vui lòng mở lại link trong email.'); return; }
+  let res;
+  try {
+    res = await Api.getResubmitInfo(id, token);
+  } catch (err) {
+    showInvalid('Không kết nối được tới hệ thống. Vui lòng thử lại sau.');
+    return;
+  }
+  if (!res.success) { showInvalid(res.message || 'Liên kết không hợp lệ hoặc đã được sử dụng.'); return; }
+
+  const it = res.item, story = res.story;
+  document.getElementById('cTen').textContent = it.hoTenUngVien;
+  document.getElementById('cMeta').textContent = `${it.tenDonVi} · MSNV ${it.maNV || '—'} · ${it.chucDanh || '—'}`;
+  document.getElementById('cLyDo').textContent = it.lyDoYeuCauChinhSua || '(HRBP không ghi lý do cụ thể)';
+
+  const fileId = extractDriveFileId(it.anhChanDungURL);
+  if (fileId) {
+    const photo = document.getElementById('cPhoto');
+    photo.classList.remove('hidden');
+    let idx = 0;
+    const candidates = driveImageCandidates(fileId);
+    photo.onerror = () => { idx++; if (idx < candidates.length) photo.src = candidates[idx]; else photo.classList.add('hidden'); };
+    photo.src = candidates[0];
+  }
+
+  document.getElementById('boiCanh').value = story.boiCanh || '';
+  document.getElementById('hanhDong').value = story.hanhDong || '';
+  document.getElementById('ketQua').value = story.ketQua || '';
+
+  const selected = (it.giaTriCotLoi || '').split(',').map(s => s.trim()).filter(Boolean);
+  document.getElementById('cvList').innerHTML = Object.keys(CV_DETAILS).map(v => `
+    <div class="cv-item">
+      <label class="cv"><input type="checkbox" value="${v}" ${selected.includes(v) ? 'checked' : ''}> <b>${v}</b> — ${CV_DETAILS[v]}</label>
+    </div>`).join('');
+
+  document.getElementById('loadingBox').classList.add('hidden');
+  document.getElementById('content').classList.remove('hidden');
+}
+init();
+
+document.getElementById('anhChanDung').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const note = document.getElementById('compressNote');
+  note.style.display = 'block';
+  note.textContent = 'Đang nén ảnh...';
+  try {
+    const b64 = await Api.compressImage(file);
+    imageBase64 = b64;
+    const preview = document.getElementById('preview');
+    preview.src = b64;
+    preview.style.display = 'block';
+    const sizeKB = Math.round((b64.length * 0.75) / 1024);
+    note.textContent = `✓ Đã nén ảnh xuống còn ~${sizeKB}KB`;
+  } catch (err) {
+    note.textContent = '⚠️ Không đọc được ảnh này — vui lòng thử ảnh khác (JPG/PNG).';
+  }
+});
+
+document.getElementById('resubmitForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('submitBtn');
+  const status = document.getElementById('status');
+  const gtcl = Array.from(document.querySelectorAll('#cvList input:checked')).map(el => el.value).join(', ');
+  btn.disabled = true;
+  btn.textContent = 'Đang gửi...';
+  status.className = ''; status.textContent = '';
+  try {
+    const res = await Api.resubmitNomination(id, token, {
+      boiCanh: document.getElementById('boiCanh').value,
+      hanhDong: document.getElementById('hanhDong').value,
+      ketQua: document.getElementById('ketQua').value,
+      giaTriCotLoi: gtcl,
+      imageBase64
+    });
+    status.className = res.success ? 'ok' : 'err';
+    status.textContent = res.message;
+    if (res.success) {
+      btn.style.display = 'none';
+    } else {
+      btn.disabled = false;
+      btn.textContent = '✅ Gửi lại đề cử đã chỉnh sửa';
+    }
+  } catch (err) {
+    status.className = 'err';
+    status.textContent = 'Hết thời gian chờ phản hồi từ hệ thống — vui lòng kiểm tra kết nối mạng rồi thử lại.';
+    btn.disabled = false;
+    btn.textContent = '✅ Gửi lại đề cử đã chỉnh sửa';
+  }
+});
+</script>
+</body>
+</html>

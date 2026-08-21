@@ -162,6 +162,9 @@ const Api = {
   // Dùng form-POST (như submitNomination) thay vì JSONP vì nội dung Bối cảnh/Hành động/Kết quả có
   // thể là đoạn văn dài, dễ vượt giới hạn độ dài URL nếu gửi qua JSONP (query string).
   updateNomination: (token, id, fields) => postForm(Object.assign({ action: 'updateNomination', token, id }, fields)),
+  // HRBP (đúng phạm vi) hoặc Admin yêu cầu Người viết đề cử bổ sung/chỉnh sửa — gửi email kèm link
+  // resubmit.html, KHÔNG còn tính là Từ chối.
+  requestEdit: (token, id, lyDo) => jsonp('requestEdit', { token, id, lyDo }),
 
   // Quarters
   getQuarters: () => jsonp('quarters'),
@@ -194,7 +197,11 @@ const Api = {
 
   // Nộp đề cử (form-post, không phải JSONP)
   submitNomination: (fields, onProgress) => postForm(fields, onProgress),
-  compressImage
+  compressImage,
+
+  // Chỉnh sửa & nộp lại đề cử (resubmit.html, công khai, xác thực bằng EditToken trong link email)
+  getResubmitInfo: (id, token) => jsonp('resubmitInfo', { id, token }),
+  resubmitNomination: (id, token, fields, onProgress) => postForm(Object.assign({ action: 'resubmit', id, token }, fields), onProgress)
 };
 
 // Điền sẵn domain email công ty (@winmart.masangroup.com) vào 1 ô input email,

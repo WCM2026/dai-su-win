@@ -207,11 +207,16 @@
       <div class="loaidonvi-quota-hint" id="loaiDonViQuotaHint"></div>
       <label>Khối/Bộ phận/Cơ sở</label>
       <input type="text" id="tenDonVi" required>
-      <label>Đại diện CBLĐ đề xuất</label>
-      <div class="hint">Từ Rank 3 trở lên</div>
+      <label>CBLĐ khối phòng</label>
+      <div class="hint">Từ Rank 3 trở lên — người đứng tên đề cử</div>
       <input type="text" id="nguoiDeXuat" required>
-      <label>Email người đề xuất</label>
-      <input type="text" id="emailNguoiDeXuat" required>
+      <label>Email CBLĐ</label>
+      <input type="text" id="emailCBLD" required>
+      <label>Người viết đề cử</label>
+      <div class="hint">Admin/đại diện Khối phòng — người trực tiếp nhập thông tin đề cử, sẽ nhận email khi cần bổ sung/chỉnh sửa</div>
+      <input type="text" id="nguoiVietDeCu" required>
+      <label>Email người viết đề cử</label>
+      <input type="text" id="emailNguoiVietDeCu" required>
     </div>
 
     <div class="card">
@@ -239,8 +244,10 @@
         <dl>
           <dt>Quý đăng ký</dt><dd id="rQuy">—</dd>
           <dt>Đơn vị</dt><dd id="rDonVi">—</dd>
-          <dt>Người đề xuất</dt><dd id="rNguoiDeXuat">—</dd>
-          <dt>Email người đề xuất</dt><dd id="rEmail">—</dd>
+          <dt>CBLĐ khối phòng</dt><dd id="rNguoiDeXuat">—</dd>
+          <dt>Email CBLĐ</dt><dd id="rEmailCBLD">—</dd>
+          <dt>Người viết đề cử</dt><dd id="rNguoiVietDeCu">—</dd>
+          <dt>Email người viết đề cử</dt><dd id="rEmail">—</dd>
         </dl>
       </div>
       <div id="rCandidates"></div>
@@ -373,7 +380,8 @@ document.getElementById('loaiDonVi').addEventListener('change', async function(e
   }
 });
 
-prefillEmailDomain(document.getElementById('emailNguoiDeXuat'));
+prefillEmailDomain(document.getElementById('emailCBLD'));
+prefillEmailDomain(document.getElementById('emailNguoiVietDeCu'));
 
 // ---------- Khối ứng viên (lặp lại, tối đa 3) ----------
 const CV_DETAILS = {
@@ -580,8 +588,10 @@ function collectSharedFields() {
     loaiDonVi: document.getElementById('loaiDonVi').value,
     mienVungKhoi: document.getElementById('mienVungKhoi').value,
     tenDonVi: document.getElementById('tenDonVi').value,
-    nguoiDeXuat: document.getElementById('nguoiDeXuat').value,
-    emailNguoiDeXuat: document.getElementById('emailNguoiDeXuat').value
+    nguoiDeXuat: document.getElementById('nguoiDeXuat').value, // CBLĐ khối phòng
+    emailNguoiDeXuat: document.getElementById('emailCBLD').value, // Email CBLĐ
+    nguoiVietDeCu: document.getElementById('nguoiVietDeCu').value,
+    emailNguoiVietDeCu: document.getElementById('emailNguoiVietDeCu').value
   };
 }
 
@@ -610,7 +620,9 @@ function openReview(shared, candidates) {
   document.getElementById('rQuy').textContent = activeQuarter ? activeQuarter.TenQuy : '—';
   document.getElementById('rDonVi').textContent = `${shared.tenDonVi} (${shared.loaiDonVi} · ${shared.mienVungKhoi})`;
   document.getElementById('rNguoiDeXuat').textContent = shared.nguoiDeXuat;
-  document.getElementById('rEmail').textContent = shared.emailNguoiDeXuat;
+  document.getElementById('rEmailCBLD').textContent = shared.emailNguoiDeXuat;
+  document.getElementById('rNguoiVietDeCu').textContent = shared.nguoiVietDeCu;
+  document.getElementById('rEmail').textContent = shared.emailNguoiVietDeCu;
 
   document.getElementById('rCandidates').innerHTML = candidates.map((c, i) => {
     const story = JSON.parse(c.cauChuyen);

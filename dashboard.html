@@ -223,7 +223,8 @@
             <dt>Chức danh</dt><dd id="mChucDanh">—</dd>
             <dt>Ngày vào Tập đoàn</dt><dd id="mNgayVao">—</dd>
             <dt>Đơn vị</dt><dd id="mDonVi">—</dd>
-            <dt>Người đề xuất</dt><dd id="mNguoiDeXuat">—</dd>
+            <dt>CBLĐ khối phòng</dt><dd id="mNguoiDeXuat">—</dd>
+            <dt>Người viết đề cử</dt><dd id="mNguoiVietDeCu">—</dd>
             <dt>Trạng thái</dt><dd><span class="badge" id="mTrangThai">—</span></dd>
             <dt>HRBP phê duyệt</dt><dd id="mNguoiDuyet">—</dd>
           </dl>
@@ -233,6 +234,8 @@
           <a id="mAnhLink" href="#" target="_blank" rel="noopener" style="display:none;font-size:11.5px;color:var(--navy);text-decoration:underline;margin-top:6px;">Xem ảnh gốc trên Drive ↗</a>
         </div>
       </div>
+
+      <div class="hidden" id="editReqNote" style="background:var(--warn-bg);color:var(--warn);border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:16px;"></div>
 
       <div class="story-section"><h3>Bối cảnh</h3><p id="mBoiCanh">—</p></div>
       <div class="story-section"><h3>Hành động / đóng góp</h3><p id="mHanhDong">—</p></div>
@@ -266,14 +269,23 @@
 
       <div class="decision-bar hidden" id="decisionBar">
         <button class="btn" id="btnApprove">✅ Duyệt</button>
+        <button class="btn secondary" id="btnRequestEdit" style="background:var(--warn);">✏️ Yêu cầu chỉnh sửa</button>
         <button class="btn secondary" id="btnReject" style="background:var(--ng);">❌ Từ chối</button>
       </div>
       <div class="hidden" id="rejectBox" style="margin-top:14px;">
-        <label style="display:block;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--bm);margin-bottom:6px;">Lý do từ chối (sẽ gửi cho người đề xuất)</label>
+        <label style="display:block;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--bm);margin-bottom:6px;">Lý do từ chối (sẽ gửi cho người viết đề cử)</label>
         <textarea id="rejectReason" rows="3" style="width:100%;padding:10px 12px;border:1.5px solid var(--br);border-radius:8px;font-size:13px;font-family:inherit;margin-bottom:10px;box-sizing:border-box;" placeholder="VD: Câu chuyện chưa thể hiện rõ đóng góp nổi bật, đề nghị bổ sung thêm ở Quý sau."></textarea>
         <div style="display:flex;gap:10px;">
           <button class="btn" id="btnConfirmReject" style="background:var(--ng);flex:1;">Xác nhận từ chối</button>
           <button class="btn ghost" id="btnCancelReject" style="flex:1;">Hủy</button>
+        </div>
+      </div>
+      <div class="hidden" id="requestEditBox" style="margin-top:14px;">
+        <label style="display:block;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--bm);margin-bottom:6px;">Nội dung cần bổ sung/chỉnh sửa (sẽ gửi email cho người viết đề cử kèm link chỉnh sửa & nộp lại)</label>
+        <textarea id="requestEditReason" rows="3" style="width:100%;padding:10px 12px;border:1.5px solid var(--br);border-radius:8px;font-size:13px;font-family:inherit;margin-bottom:10px;box-sizing:border-box;" placeholder="VD: Bổ sung thêm số liệu cụ thể ở phần Kết quả nhận được."></textarea>
+        <div style="display:flex;gap:10px;">
+          <button class="btn" id="btnConfirmRequestEdit" style="background:var(--warn);flex:1;">Gửi yêu cầu chỉnh sửa</button>
+          <button class="btn ghost" id="btnCancelRequestEdit" style="flex:1;">Hủy</button>
         </div>
       </div>
       <div class="decide-msg" id="decideMsg"></div>
@@ -386,9 +398,11 @@ async function loadAll() {
   document.getElementById('scopeNote').textContent = session.role === 'admin' ? 'Đang xem: toàn bộ đơn vị' : `Đang xem: phạm vi phụ trách (${session.phamVi})`;
 
   currentItems = data.items || [];
+  // Ưu tiên sắp xếp: 0 = đang chờ MÌNH xử lý (Chờ HRBP/GĐ Khối duyệt), 1 = đang chờ Người viết đề
+  // cử nộp lại (Yêu cầu chỉnh sửa — vẫn "mở", chỉ là bóng đang ở phía họ), 2 = đã có kết quả cuối.
+  const sortTier = (s) => String(s || '').startsWith('Chờ') ? 0 : (s === 'Yêu cầu chỉnh sửa' ? 1 : 2);
   const sorted = [...currentItems].sort((a, b) => {
-    const pa = String(a.TrangThai || '').startsWith('Chờ') ? 0 : 1;
-    const pb = String(b.TrangThai || '').startsWith('Chờ') ? 0 : 1;
+    const pa = sortTier(a.TrangThai), pb = sortTier(b.TrangThai);
     if (pa !== pb) return pa - pb;
     return new Date(b.ThoiGianNop) - new Date(a.ThoiGianNop);
   });
@@ -398,7 +412,7 @@ async function loadAll() {
   else { alertEl.classList.add('hidden'); }
 
   document.getElementById('rows').innerHTML = sorted.length ? sorted.map(r => {
-    const isPending = String(r.TrangThai || '').startsWith('Chờ');
+    const isPending = String(r.TrangThai || '').startsWith('Chờ') || r.TrangThai === 'Yêu cầu chỉnh sửa';
     return `<tr onclick="openDetail('${r.ID}')" class="${isPending ? 'row-pending' : ''}">
       <td>${isPending ? '<span class="pending-dot"></span>' : ''}${r.HoTenUngVien}</td><td>${r.TenDonVi}</td><td>${r.NguoiDeXuat}</td>
       <td><span class="badge ${badgeClass(r.TrangThai)}">${displayStatus(r.TrangThai)}</span></td>
@@ -464,9 +478,18 @@ async function openDetail(id) {
   document.getElementById('mNgayVao').textContent = it.NgayVaoTapDoan ? new Date(it.NgayVaoTapDoan).toLocaleDateString('vi-VN') : '—';
   document.getElementById('mDonVi').textContent = `${it.TenDonVi} (${it.LoaiDonVi} · ${it.MienVung_Khoi})`;
   document.getElementById('mNguoiDeXuat').textContent = it.NguoiDeXuat;
+  document.getElementById('mNguoiVietDeCu').textContent = it.NguoiVietDeCu ? `${it.NguoiVietDeCu} (${it.EmailNguoiVietDeCu || ''})` : '—';
   const badge = document.getElementById('mTrangThai');
   badge.textContent = displayStatus(it.TrangThai); badge.className = 'badge ' + badgeClass(it.TrangThai);
   document.getElementById('mNguoiDuyet').textContent = it.HRBPNguoiDuyet || '—';
+
+  const editReqNote = document.getElementById('editReqNote');
+  if (it.TrangThai === 'Yêu cầu chỉnh sửa' && it.LyDoYeuCauChinhSua) {
+    editReqNote.classList.remove('hidden');
+    editReqNote.textContent = `✏️ Đã yêu cầu chỉnh sửa: ${it.LyDoYeuCauChinhSua} — đang chờ Người viết đề cử nộp lại.`;
+  } else {
+    editReqNote.classList.add('hidden');
+  }
 
   const img = document.getElementById('mAnh');
   const link = document.getElementById('mAnhLink');
@@ -493,6 +516,8 @@ async function openDetail(id) {
   document.getElementById('decisionBar').classList.toggle('hidden', !res.canDecide);
   document.getElementById('rejectBox').classList.add('hidden');
   document.getElementById('rejectReason').value = '';
+  document.getElementById('requestEditBox').classList.add('hidden');
+  document.getElementById('requestEditReason').value = '';
 
   document.getElementById('editBox').classList.add('hidden');
   document.getElementById('editToggleRow').classList.toggle('hidden', !res.canEdit);
@@ -533,6 +558,40 @@ document.getElementById('btnConfirmReject').onclick = () => {
     return;
   }
   decide(false, reason);
+};
+
+// ---------- Yêu cầu chỉnh sửa (thay vì Duyệt/Từ chối) ----------
+document.getElementById('btnRequestEdit').onclick = () => {
+  document.getElementById('decisionBar').classList.add('hidden');
+  document.getElementById('requestEditBox').classList.remove('hidden');
+  document.getElementById('requestEditReason').focus();
+};
+document.getElementById('btnCancelRequestEdit').onclick = () => {
+  document.getElementById('requestEditBox').classList.add('hidden');
+  document.getElementById('decisionBar').classList.remove('hidden');
+};
+document.getElementById('btnConfirmRequestEdit').onclick = async () => {
+  const reason = document.getElementById('requestEditReason').value.trim();
+  const msg = document.getElementById('decideMsg');
+  if (!reason) {
+    msg.className = 'decide-msg err';
+    msg.textContent = 'Vui lòng nhập nội dung cần bổ sung/chỉnh sửa.';
+    return;
+  }
+  const btn = document.getElementById('btnConfirmRequestEdit');
+  const originalLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Đang gửi...';
+  const res = await Api.requestEdit(session.token, currentDetailId, reason);
+  btn.disabled = false;
+  btn.textContent = originalLabel;
+  msg.className = 'decide-msg ' + (res.success ? 'ok' : 'err');
+  msg.textContent = res.message;
+  if (res.success) {
+    document.getElementById('requestEditBox').classList.add('hidden');
+    loadAll();
+    await openDetail(currentDetailId);
+  }
 };
 
 // ---------- Chỉnh sửa nội dung đề cử (HRBP xét duyệt) ----------
