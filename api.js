@@ -1,5 +1,10 @@
 // api.js — gọi backend Apps Script từ domain khác (GitHub Pages)
 // CẬP NHẬT URL này thành URL Web App đã deploy (Deploy > Manage deployments > copy URL)
+// ⚠️ QUAN TRỌNG — CACHE TRÌNH DUYỆT: các file .html đang nhúng file này qua "api.js?v=13" (có tham
+// số version). Mỗi khi sửa NỘI DUNG file api.js này, PHẢI tăng số version đó trong TẤT CẢ các thẻ
+// <script src="api.js?v=..."> ở index.html/dashboard.html/admin.html/login.html/resubmit.html —
+// nếu không, trình duyệt (và cả CDN của GitHub Pages) có thể tiếp tục phục vụ bản CŨ đã cache dù
+// đã publish bản mới, khiến việc sửa lỗi/tính năng mới KHÔNG có hiệu lực dù deploy đúng.
 const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbz-489WtsNWSWfgGsb6muXqlzjmDSc2XD4pnCdSgau7b2N3RMEolnIgeSA1uPL_wU83/exec';
 // CẬP NHẬT URL này thành URL Google Sheet backend (mở trực tiếp để sửa hàng loạt Users / DanhMucKhoiPhong / Quarters)
 const SPREADSHEET_URL = 'https://docs.google.com/spreadsheets/d/1RZ0-hSwBtnyt2O84xb1p8u8qcvXVLW2B-9k1fApJGZU/edit';
