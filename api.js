@@ -36,7 +36,10 @@ function jsonp(action, params = {}, timeoutMs = 20000) {
 
 // ---- Form-POST qua iframe ẩn: dùng cho việc GHI dữ liệu lớn (nộp đề cử có ảnh) ----
 // Đây là submit form thật (browser navigation) nên không bị CORS chặn, không giới hạn độ dài URL.
-function postForm(fields, onProgress) {
+// verifyFn (tuỳ chọn): hàm async tự kiểm tra kết quả qua kênh khác (JSONP) — dùng khi cầu nối
+// postMessage giữa các iframe lồng nhau không đáng tin cậy (xem ghi chú bên dưới). Trả về 1 object
+// kết quả nếu đã xác minh được, hoặc null/undefined nếu chưa xác minh được (thử lại ở lần poll kế).
+function postForm(fields, onProgress, verifyFn) {
   return new Promise((resolve, reject) => {
     const frameName = `_frame_${Date.now()}`;
     const iframe = document.createElement('iframe');
@@ -83,10 +86,16 @@ function postForm(fields, onProgress) {
     form.remove();
 
     // DỰ PHÒNG: cầu nối postMessage qua iframe ẩn đôi khi không đáng tin cậy (tùy trình duyệt/mạng),
-    // dù backend đã ghi dữ liệu thành công. Nếu request có clientKey, chủ động hỏi lại server bằng
-    // JSONP (kênh GET đơn giản, đã chứng minh hoạt động ổn định) để xác nhận độc lập — không cần
-    // chờ postMessage nữa nếu đã xác nhận được dòng dữ liệu tồn tại.
-    if (fields && fields.clientKey) {
+    // dù backend đã ghi/cập nhật dữ liệu thành công. Nếu có verifyFn (hoặc request có clientKey, dùng
+    // mặc định là kiểm tra checkClientKey) — chủ động hỏi lại server bằng JSONP (kênh GET đơn giản,
+    // đã chứng minh hoạt động ổn định) để xác nhận độc lập, không cần chờ postMessage nữa.
+    const effectiveVerify = verifyFn || (fields && fields.clientKey
+      ? async () => {
+          const res = await jsonp('checkClientKey', { clientKey: fields.clientKey });
+          return (res && res.found) ? { success: true, message: 'Đã nộp đề cử thành công!' } : null;
+        }
+      : null);
+    if (effectiveVerify) {
       let attempts = 0;
       const maxAttempts = 10;
       pollTimer = setInterval(async () => {
@@ -94,11 +103,8 @@ function postForm(fields, onProgress) {
         attempts++;
         if (typeof onProgress === 'function') { try { onProgress(attempts, maxAttempts); } catch (e) {} }
         try {
-          const res = await jsonp('checkClientKey', { clientKey: fields.clientKey });
-          if (res && res.found) {
-            finish({ success: true, message: 'Đã nộp đề cử thành công!' });
-            return;
-          }
+          const verified = await effectiveVerify();
+          if (verified) { finish(verified); return; }
         } catch (err) { /* bỏ qua, thử lại ở lần poll kế tiếp */ }
         if (attempts >= maxAttempts) clearInterval(pollTimer);
       }, 4000);
@@ -224,7 +230,30 @@ const Api = {
 
   // Chỉnh sửa & nộp lại đề cử (resubmit.html, công khai, xác thực bằng EditToken trong link email)
   getResubmitInfo: (id, token) => jsonp('resubmitInfo', { id, token }),
-  resubmitNomination: (id, token, fields, onProgress) => postForm(Object.assign({ action: 'resubmit', id, token }, fields), onProgress)
+  // verifyFn: hỏi lại resubmitInfo qua JSONP (kênh khác, ổn định hơn) để xác nhận độc lập việc lưu
+  // đã thành công hay chưa — không phụ thuộc cầu nối postMessage giữa iframe lồng nhau (đôi khi
+  // không hoạt động, khiến người dùng chờ hết 90s rồi thấy lỗi timeout dù đã lưu thành công thật).
+  // - Chế độ "tự chỉnh sửa" (còn "Chờ HRBP duyệt"): so khớp nội dung trả về với nội dung vừa gửi.
+  // - Chế độ "yêu cầu chỉnh sửa": sau khi nộp lại, EditToken bị xóa nên resubmitInfo sẽ báo không
+  //   còn hợp lệ — đó chính là dấu hiệu đã nộp lại thành công (đề cử đã chuyển sang bước xét duyệt).
+  resubmitNomination: (id, token, fields, onProgress) => postForm(
+    Object.assign({ action: 'resubmit', id, token }, fields),
+    onProgress,
+    async () => {
+      let info;
+      try { info = await jsonp('resubmitInfo', { id, token }); } catch (e) { return null; }
+      if (info && info.success && info.mode === 'selfEdit' && info.story &&
+          info.story.boiCanh === (fields.boiCanh || '') &&
+          info.story.hanhDong === (fields.hanhDong || '') &&
+          info.story.ketQua === (fields.ketQua || '')) {
+        return { success: true, message: 'Đã lưu thay đổi. Đề cử vẫn đang chờ HRBP duyệt — bạn có thể tiếp tục chỉnh sửa nếu cần.' };
+      }
+      if (info && !info.success) {
+        return { success: true, message: 'Đã nộp lại đề cử đã chỉnh sửa!' };
+      }
+      return null;
+    }
+  )
 };
 
 // Điền sẵn domain email công ty (@winmart.masangroup.com) vào 1 ô input email,

@@ -251,7 +251,7 @@ document.getElementById('resubmitForm').addEventListener('submit', async (e) => 
       ketQua: document.getElementById('ketQua').value,
       giaTriCotLoi: gtcl,
       imageBase64
-    });
+    }, (attempt, max) => { btn.textContent = `Đang xác nhận với hệ thống (${attempt}/${max})...`; });
     status.className = res.success ? 'ok' : 'err';
     status.textContent = res.message;
     if (res.success && currentMode !== 'selfEdit') {
