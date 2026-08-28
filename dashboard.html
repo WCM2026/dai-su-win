@@ -256,6 +256,11 @@
             <dt>Ngày vào Tập đoàn</dt><dd id="mNgayVao">—</dd>
             <dt>Đơn vị</dt><dd id="mDonVi">—</dd>
             <dt>Người viết đề cử</dt><dd id="mNguoiVietDeCu">—</dd>
+            <dt id="mSelfEditLabel" class="hidden">Link tự chỉnh sửa</dt>
+            <dd id="mSelfEditRow" class="hidden">
+              <a href="#" id="mSelfEditLink" target="_blank" style="word-break:break-all;">—</a>
+              <button type="button" id="btnCopySelfEditLink" class="btn ghost" style="padding:2px 10px;font-size:11px;margin-left:6px;">Sao chép</button>
+            </dd>
             <dt>Trạng thái</dt><dd><span class="badge" id="mTrangThai">—</span></dd>
             <dt>CBLĐ khối phòng</dt><dd id="mNguoiDeXuat">—</dd>
             <dt>HRBP phê duyệt</dt><dd id="mNguoiDuyet">—</dd>
@@ -576,6 +581,22 @@ async function openDetail(id) {
   document.getElementById('mNgayVao').textContent = it.NgayVaoTapDoan ? new Date(it.NgayVaoTapDoan).toLocaleDateString('vi-VN') : '—';
   document.getElementById('mDonVi').textContent = `${it.TenDonVi} (${it.LoaiDonVi} · ${it.MienVung_Khoi})`;
   document.getElementById('mNguoiVietDeCu').textContent = it.NguoiVietDeCu ? `${it.NguoiVietDeCu} (${it.EmailNguoiVietDeCu || ''})` : '—';
+
+  // Link tự chỉnh sửa (Người viết đề cử tự sửa trong lúc còn "Chờ HRBP duyệt") — chỉ có khi đúng
+  // trạng thái này; server tự sinh bổ sung EditToken cho cả đề cử cũ nộp trước khi có tính năng này.
+  const selfEditRow = document.getElementById('mSelfEditRow');
+  const selfEditLabel = document.getElementById('mSelfEditLabel');
+  if (res.selfEditUrl) {
+    selfEditRow.classList.remove('hidden');
+    selfEditLabel.classList.remove('hidden');
+    const link = document.getElementById('mSelfEditLink');
+    link.href = res.selfEditUrl;
+    link.textContent = res.selfEditUrl;
+  } else {
+    selfEditRow.classList.add('hidden');
+    selfEditLabel.classList.add('hidden');
+  }
+
   const badge = document.getElementById('mTrangThai');
   badge.textContent = displayStatus(it.TrangThai); badge.className = 'badge ' + badgeClass(it.TrangThai);
   document.getElementById('mNguoiDeXuat').textContent = it.NguoiDeXuat ? `${it.NguoiDeXuat} (${it.EmailNguoiDeXuat || ''})` : '—';
@@ -782,6 +803,20 @@ document.getElementById('btnSaveEdit').onclick = async () => {
 };
 
 // ---------- Admin: đổi trạng thái đề cử (ghi đè) ----------
+document.getElementById('btnCopySelfEditLink').onclick = async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('btnCopySelfEditLink');
+  const url = document.getElementById('mSelfEditLink').href;
+  try {
+    await navigator.clipboard.writeText(url);
+    const original = btn.textContent;
+    btn.textContent = 'Đã sao chép!';
+    setTimeout(() => { btn.textContent = original; }, 1500);
+  } catch (err) {
+    alert('Không sao chép được tự động — vui lòng bôi đen và copy thủ công:\n' + url);
+  }
+};
+
 document.getElementById('btnAdminStage').onclick = () => {
   document.getElementById('decisionBar').classList.add('hidden');
   document.getElementById('editBox').classList.add('hidden');

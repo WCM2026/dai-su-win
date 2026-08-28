@@ -36,6 +36,7 @@
   .candidate-summary .meta { font-size:13px; color:var(--muted); }
   .reason-box { background:var(--warn-bg); color:var(--warn); border-radius:8px; padding:12px 14px; font-size:13.5px; line-height:1.5; margin-top:16px; }
   .reason-box b { display:block; font-size:11px; text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px; }
+  .info-box { background:rgba(0,87,184,.08); color:var(--bm); border-radius:8px; padding:12px 14px; font-size:13.5px; line-height:1.5; margin-top:16px; }
   label { display:block; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.4px; color:var(--bm); margin-bottom:6px; }
   .hint { font-size:12px; color:var(--muted); margin-top:-4px; margin-bottom:8px; text-transform:none; letter-spacing:normal; font-weight:400; }
   textarea, input[type=file] {
@@ -67,7 +68,7 @@
       <div class="dsw-logo"><img src="https://s3.hn-2.cloud.cmctelecom.vn/rop/prod/UploadFile/2026/07/02/2026070214080186231910f253.png" alt="Đại sứ WIN"></div>
     </div>
     <div class="eyebrow">Đại sứ WIN</div>
-    <h1>Chỉnh sửa & nộp lại đề cử</h1>
+    <h1 id="pageTitle">Chỉnh sửa & nộp lại đề cử</h1>
   </div>
 
   <div id="loadingBox" class="card"><div class="loading">Đang tải thông tin đề cử...</div></div>
@@ -82,9 +83,12 @@
           <div class="meta" id="cMeta">—</div>
         </div>
       </div>
-      <div class="reason-box">
+      <div class="reason-box hidden" id="reasonBox">
         <b id="cLyDoLabel">HRBP yêu cầu bổ sung/chỉnh sửa</b>
         <span id="cLyDo">—</span>
+      </div>
+      <div class="info-box hidden" id="selfEditBox">
+        Đề cử này đang <b>chờ HRBP duyệt</b>. Bạn có thể tự chỉnh sửa nội dung nhiều lần trước khi HRBP bắt đầu xem xét — sau đó link này sẽ không còn dùng được nữa.
       </div>
     </div>
 
@@ -135,6 +139,7 @@ const CV_DETAILS = {
 };
 
 let imageBase64 = '';
+let currentMode = 'requested'; // 'selfEdit' | 'requested' — được set lại trong init() theo phản hồi server
 
 function showInvalid(msg) {
   document.getElementById('loadingBox').classList.add('hidden');
@@ -170,9 +175,21 @@ async function init() {
   const it = res.item, story = res.story;
   document.getElementById('cTen').textContent = it.hoTenUngVien;
   document.getElementById('cMeta').textContent = `${it.tenDonVi} · MSNV ${it.maNV || '—'} · ${it.chucDanh || '—'}`;
-  const nguoiYeuCau = it.chinhSuaTuBuoc === 'GDVH' ? 'GĐVH' : 'HRBP';
-  document.getElementById('cLyDoLabel').textContent = `${nguoiYeuCau} yêu cầu bổ sung/chỉnh sửa`;
-  document.getElementById('cLyDo').textContent = it.lyDoYeuCauChinhSua || `(${nguoiYeuCau} không ghi lý do cụ thể)`;
+
+  if (res.mode === 'selfEdit') {
+    currentMode = 'selfEdit';
+    document.getElementById('selfEditBox').classList.remove('hidden');
+    document.getElementById('reasonBox').classList.add('hidden');
+    document.getElementById('pageTitle').textContent = 'Chỉnh sửa đề cử';
+    document.getElementById('submitBtn').textContent = '✅ Lưu thay đổi';
+  } else {
+    currentMode = 'requested';
+    const nguoiYeuCau = it.chinhSuaTuBuoc === 'GDVH' ? 'GĐVH' : 'HRBP';
+    document.getElementById('cLyDoLabel').textContent = `${nguoiYeuCau} yêu cầu bổ sung/chỉnh sửa`;
+    document.getElementById('cLyDo').textContent = it.lyDoYeuCauChinhSua || `(${nguoiYeuCau} không ghi lý do cụ thể)`;
+    document.getElementById('reasonBox').classList.remove('hidden');
+    document.getElementById('selfEditBox').classList.add('hidden');
+  }
 
   const fileId = extractDriveFileId(it.anhChanDungURL);
   if (fileId) {
@@ -223,6 +240,7 @@ document.getElementById('resubmitForm').addEventListener('submit', async (e) => 
   const btn = document.getElementById('submitBtn');
   const status = document.getElementById('status');
   const gtcl = Array.from(document.querySelectorAll('#cvList input:checked')).map(el => el.value).join(', ');
+  const originalLabel = currentMode === 'selfEdit' ? '✅ Lưu thay đổi' : '✅ Gửi lại đề cử đã chỉnh sửa';
   btn.disabled = true;
   btn.textContent = 'Đang gửi...';
   status.className = ''; status.textContent = '';
@@ -236,17 +254,19 @@ document.getElementById('resubmitForm').addEventListener('submit', async (e) => 
     });
     status.className = res.success ? 'ok' : 'err';
     status.textContent = res.message;
-    if (res.success) {
+    if (res.success && currentMode !== 'selfEdit') {
+      // Chế độ "yêu cầu chỉnh sửa": link 1 lần dùng, ẩn nút sau khi nộp lại thành công.
       btn.style.display = 'none';
     } else {
+      // Chế độ "tự chỉnh sửa": cho phép lưu tiếp nhiều lần trước khi HRBP duyệt.
       btn.disabled = false;
-      btn.textContent = '✅ Gửi lại đề cử đã chỉnh sửa';
+      btn.textContent = originalLabel;
     }
   } catch (err) {
     status.className = 'err';
     status.textContent = 'Hết thời gian chờ phản hồi từ hệ thống — vui lòng kiểm tra kết nối mạng rồi thử lại.';
     btn.disabled = false;
-    btn.textContent = '✅ Gửi lại đề cử đã chỉnh sửa';
+    btn.textContent = originalLabel;
   }
 });
 </script>

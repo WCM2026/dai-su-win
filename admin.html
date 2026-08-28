@@ -107,11 +107,13 @@
       <div class="panel">
         <div class="panel-head">
           <h2>Các Quý đăng ký</h2>
-          <div style="display:flex;gap:8px;">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
             <a class="btn secondary" style="text-decoration:none;" id="sheetLinkQuarters" target="_blank">📄 Mở trong Google Sheet</a>
             <button class="btn" id="exportBtn">⬇ Xuất báo cáo (.csv)</button>
+            <button class="btn" id="exportExcelBtn" style="background:var(--a2);">📊 Xuất Excel đầy đủ (.xlsx)</button>
           </div>
         </div>
+        <div class="scope-note" id="exportExcelMsg" style="display:none;margin:-4px 0 10px;"></div>
         <div class="list-wrap" id="quarterList"><div class="loading">Đang tải...</div></div>
         <div class="add-row">
           <div>
@@ -260,6 +262,34 @@ document.getElementById('addQuarterBtn').onclick = async () => {
   loadQuarters();
 };
 document.getElementById('exportBtn').onclick = () => window.open(Api.exportCsvUrl(session.token, currentQuarterForExport), '_blank');
+
+document.getElementById('exportExcelBtn').onclick = async () => {
+  const btn = document.getElementById('exportExcelBtn');
+  const msgEl = document.getElementById('exportExcelMsg');
+  const original = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Đang tạo file... (có thể mất vài phút)';
+  msgEl.style.display = 'block';
+  msgEl.style.color = 'var(--muted)';
+  msgEl.textContent = 'Đang tổng hợp số liệu, tạo biểu đồ và từng sheet đề cử — vui lòng không đóng trang này.';
+  try {
+    const res = await Api.exportFullExcel(session.token, currentQuarterForExport);
+    if (res.success) {
+      msgEl.style.color = 'var(--ok)';
+      msgEl.textContent = '✅ ' + res.message + ' Đang mở link tải về...';
+      window.open(res.downloadUrl, '_blank');
+    } else {
+      msgEl.style.color = 'var(--err)';
+      msgEl.textContent = '❌ ' + res.message;
+    }
+  } catch (err) {
+    msgEl.style.color = 'var(--err)';
+    msgEl.textContent = '❌ Lỗi kết nối hoặc quá thời gian chờ: ' + err.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = original;
+  }
+};
 
 // ---------- Users ----------
 function esc(s) {

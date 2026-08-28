@@ -213,6 +213,10 @@ const Api = {
 
   // Export
   exportCsvUrl: (token, quy) => `${WEBAPP_URL}?action=exportCsv&token=${token}&quy=${quy || 'all'}`,
+  // Xuất báo cáo Excel đầy đủ (Admin) — tạo nhiều sheet + biểu đồ nên có thể mất vài phút, dùng
+  // timeout riêng (240s) thay vì mặc định 20s của jsonp(). Trả về { success, downloadUrl } —
+  // client tự window.open(downloadUrl) để tải file .xlsx thật đã lưu trên Drive.
+  exportFullExcel: (token, quy) => jsonp('exportFullExcel', { token, quy: quy || 'all' }, 240000),
 
   // Nộp đề cử (form-post, không phải JSONP)
   submitNomination: (fields, onProgress) => postForm(fields, onProgress),

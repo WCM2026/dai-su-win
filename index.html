@@ -286,6 +286,7 @@
         <button id="btnConfirmSubmit">✅ Xác nhận gửi đề cử</button>
       </div>
       <div id="reviewStatus"></div>
+      <div id="editLinksBox" class="hidden" style="margin-top:14px;padding:14px 16px;border-radius:10px;background:rgba(0,87,184,.06);"></div>
     </div>
   </div>
 </div>
@@ -741,6 +742,10 @@ function collectCandidates() {
 }
 
 function openReview(shared, candidates) {
+  document.getElementById('editLinksBox').classList.add('hidden');
+  document.getElementById('editLinksBox').innerHTML = '';
+  document.getElementById('reviewStatus').className = '';
+  document.getElementById('reviewStatus').textContent = '';
   document.getElementById('rQuy').textContent = activeQuarter ? activeQuarter.TenQuy : '—';
   document.getElementById('rDonVi').textContent = `${shared.tenDonVi} (${shared.loaiDonVi} · ${shared.mienVungKhoi})`;
   document.getElementById('rNguoiDeXuat').textContent = shared.nguoiDeXuat;
@@ -817,7 +822,7 @@ async function submitOneCandidate(shared, candidate, baseLabel, btn) {
       (attempt, max) => { btn.textContent = `${baseLabel} — đang xác nhận với hệ thống (${attempt}/${max})...`; }
     );
     return res.success
-      ? { ok: true, imageDropped: false }
+      ? { ok: true, imageDropped: false, id: res.id, editToken: res.editToken }
       : { ok: false, message: res.message };
   } catch (err) {
     if (!hasImage) {
@@ -833,7 +838,7 @@ async function submitOneCandidate(shared, candidate, baseLabel, btn) {
         (attempt, max) => { btn.textContent = `${baseLabel} — đang xác nhận lại (${attempt}/${max})...`; }
       );
       return res2.success
-        ? { ok: true, imageDropped: true }
+        ? { ok: true, imageDropped: true, id: res2.id, editToken: res2.editToken }
         : { ok: false, message: res2.message };
     } catch (err2) {
       return { ok: false, message: 'Ảnh quá nặng hoặc mạng quá chậm khiến hệ thống không xử lý kịp, kể cả khi đã thử bỏ ảnh. Vui lòng kiểm tra lại kết nối mạng và thử nộp lại (có thể chọn ảnh nhẹ hơn hoặc chụp ảnh mới với độ phân giải thấp hơn).' };
@@ -851,6 +856,7 @@ document.getElementById('btnConfirmSubmit').onclick = async () => {
   let successCount = 0;
   const errors = [];
   const imageDropped = [];
+  const editLinks = []; // { hoTen, url } — link tự chỉnh sửa trước khi HRBP duyệt, cho từng ứng viên nộp thành công
 
   for (let i = 0; i < candidates.length; i++) {
     const baseLabel = candidates.length > 1 ? `Đang gửi ứng viên ${i + 1}/${candidates.length}` : 'Đang gửi';
@@ -859,6 +865,12 @@ document.getElementById('btnConfirmSubmit').onclick = async () => {
     if (result.ok) {
       successCount++;
       if (result.imageDropped) imageDropped.push(candidates[i].hoTenUngVien || `Ứng viên ${i + 1}`);
+      if (result.id && result.editToken) {
+        editLinks.push({
+          hoTen: candidates[i].hoTenUngVien || `Ứng viên ${i + 1}`,
+          url: `resubmit.html?id=${result.id}&token=${result.editToken}`
+        });
+      }
     } else {
       errors.push(`Ứng viên ${i + 1} (${candidates[i].hoTenUngVien || '—'}): ${result.message}`);
     }
@@ -873,6 +885,16 @@ document.getElementById('btnConfirmSubmit').onclick = async () => {
     reviewStatus.textContent = msg;
     btn.style.display = 'none';
     document.getElementById('btnBackEdit').textContent = 'Đóng';
+
+    // Cho phép tự chỉnh sửa ngay trong lúc đề cử còn "Chờ HRBP duyệt" — không cần đợi email.
+    if (editLinks.length) {
+      const editLinksBox = document.getElementById('editLinksBox');
+      editLinksBox.classList.remove('hidden');
+      editLinksBox.innerHTML =
+        `<div style="font-size:12.5px;font-weight:700;color:var(--bm);margin-bottom:8px;">✏️ Cần chỉnh sửa trước khi HRBP duyệt? (link cũng đã gửi qua email)</div>` +
+        editLinks.map(l => `<div style="margin-bottom:4px;"><a href="${l.url}" target="_blank" style="color:var(--bm);font-weight:600;">Chỉnh sửa đề cử — ${esc(l.hoTen)}</a></div>`).join('');
+    }
+
     document.getElementById('nominationForm').reset();
     document.getElementById('candidatesContainer').innerHTML = '';
     candidateCount = 0;
