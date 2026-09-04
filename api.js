@@ -1,6 +1,6 @@
 // api.js — gọi backend Apps Script từ domain khác (GitHub Pages)
 // CẬP NHẬT URL này thành URL Web App đã deploy (Deploy > Manage deployments > copy URL)
-// ⚠️ QUAN TRỌNG — CACHE TRÌNH DUYỆT: các file .html đang nhúng file này qua "api.js?v=15" (có tham
+// ⚠️ QUAN TRỌNG — CACHE TRÌNH DUYỆT: các file .html đang nhúng file này qua "api.js?v=16" (có tham
 // số version). Mỗi khi sửa NỘI DUNG file api.js này, PHẢI tăng số version đó trong TẤT CẢ các thẻ
 // <script src="api.js?v=..."> ở index.html/dashboard.html/admin.html/login.html/resubmit.html —
 // nếu không, trình duyệt (và cả CDN của GitHub Pages) có thể tiếp tục phục vụ bản CŨ đã cache dù
@@ -185,29 +185,22 @@ const Api = {
   // HRBP (đúng phạm vi) hoặc Admin chỉnh sửa nội dung đề cử khi còn ở bước "Chờ HRBP duyệt".
   // Dùng form-POST (như submitNomination) thay vì JSONP vì nội dung Bối cảnh/Hành động/Kết quả có
   // thể là đoạn văn dài, dễ vượt giới hạn độ dài URL nếu gửi qua JSONP (query string).
-  // verifyFn: hỏi lại getDetail() qua JSONP (kênh khác, ổn định hơn) để xác nhận độc lập việc lưu đã
-  // thành công hay chưa — không phụ thuộc cầu nối postMessage giữa iframe lồng nhau (đôi khi không
-  // hoạt động, khiến người dùng chờ hết 90s rồi thấy lỗi timeout dù đã lưu thành công thật — đúng
-  // bug đã gặp và sửa tương tự ở Api.resubmitNomination()).
-  updateNomination: (token, id, fields, onProgress) => postForm(
-    Object.assign({ action: 'updateNomination', token, id }, fields),
-    onProgress,
-    async () => {
-      let info;
-      try { info = await jsonp('detail', { token, id }); } catch (e) { return null; }
-      if (!info || !info.success) return null;
-      const story = info.story || {};
-      const item = info.item || {};
-      const ok =
-        (fields.boiCanh === undefined || story.boiCanh === fields.boiCanh) &&
-        (fields.hanhDong === undefined || story.hanhDong === fields.hanhDong) &&
-        (fields.ketQua === undefined || story.ketQua === fields.ketQua) &&
-        (fields.giaTriCotLoi === undefined || item.GiaTriCotLoi === fields.giaTriCotLoi) &&
-        (fields.nguoiDeXuat === undefined || item.NguoiDeXuat === fields.nguoiDeXuat) &&
-        (fields.emailNguoiDeXuat === undefined || item.EmailNguoiDeXuat === fields.emailNguoiDeXuat);
-      return ok ? { success: true, message: 'Đã lưu thay đổi nội dung đề cử.' } : null;
-    }
-  ),
+  // verifyFn: TÁI DÙNG cơ chế checkClientKey đã chứng minh ổn định của submitNomination() — thay vì
+  // gọi lại getDetail() (nặng hơn: đọc toàn bộ sheet + dựng lại object đầy đủ) để so khớp từng
+  // trường nội dung. Cách so khớp nội dung cũ từng khiến người dùng thấy báo lỗi timeout dù dữ liệu
+  // đã lưu đúng, do getDetail() không phản hồi đủ nhanh/ổn định qua nhiều lần poll liên tiếp.
+  updateNomination: (token, id, fields, onProgress) => {
+    const clientKey = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    return postForm(
+      Object.assign({ action: 'updateNomination', token, id, clientKey }, fields),
+      onProgress,
+      async () => {
+        let res;
+        try { res = await jsonp('checkClientKey', { clientKey }); } catch (e) { return null; }
+        return (res && res.found) ? { success: true, message: 'Đã lưu thay đổi nội dung đề cử.' } : null;
+      }
+    );
+  },
   // HRBP (đúng phạm vi) hoặc Admin yêu cầu Người viết đề cử bổ sung/chỉnh sửa — gửi email kèm link
   // resubmit.html, KHÔNG còn tính là Từ chối.
   requestEdit: (token, id, lyDo) => jsonp('requestEdit', { token, id, lyDo }),
@@ -263,26 +256,21 @@ const Api = {
   // - Chế độ "tự chỉnh sửa" (còn "Chờ HRBP duyệt"): so khớp nội dung trả về với nội dung vừa gửi.
   // - Chế độ "yêu cầu chỉnh sửa": sau khi nộp lại, EditToken bị xóa nên resubmitInfo sẽ báo không
   //   còn hợp lệ — đó chính là dấu hiệu đã nộp lại thành công (đề cử đã chuyển sang bước xét duyệt).
-  resubmitNomination: (id, token, fields, onProgress) => postForm(
-    Object.assign({ action: 'resubmit', id, token }, fields),
-    onProgress,
-    async () => {
-      let info;
-      try { info = await jsonp('resubmitInfo', { id, token }); } catch (e) { return null; }
-      if (info && info.success && info.mode === 'selfEdit' && info.story && info.item &&
-          info.story.boiCanh === (fields.boiCanh || '') &&
-          info.story.hanhDong === (fields.hanhDong || '') &&
-          info.story.ketQua === (fields.ketQua || '') &&
-          (fields.nguoiDeXuat === undefined || info.item.nguoiDeXuat === fields.nguoiDeXuat) &&
-          (fields.emailNguoiDeXuat === undefined || info.item.emailNguoiDeXuat === fields.emailNguoiDeXuat)) {
-        return { success: true, message: 'Đã lưu thay đổi. Đề cử vẫn đang chờ HRBP duyệt — bạn có thể tiếp tục chỉnh sửa nếu cần.' };
+  // verifyFn: TÁI DÙNG cơ chế checkClientKey (nhẹ, đã chứng minh ổn định) thay vì so khớp nội dung
+  // qua getResubmitInfo() — không cần phân biệt chế độ selfEdit/requested nữa vì backend ghi
+  // ClientKey ở CẢ 2 chế độ khi lưu thành công.
+  resubmitNomination: (id, token, fields, onProgress) => {
+    const clientKey = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    return postForm(
+      Object.assign({ action: 'resubmit', id, token, clientKey }, fields),
+      onProgress,
+      async () => {
+        let res;
+        try { res = await jsonp('checkClientKey', { clientKey }); } catch (e) { return null; }
+        return (res && res.found) ? { success: true, message: 'Đã lưu thay đổi thành công!' } : null;
       }
-      if (info && !info.success) {
-        return { success: true, message: 'Đã nộp lại đề cử đã chỉnh sửa!' };
-      }
-      return null;
-    }
-  )
+    );
+  }
 };
 
 // Điền sẵn domain email công ty (@winmart.masangroup.com) vào 1 ô input email,
