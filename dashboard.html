@@ -664,7 +664,20 @@ function closeDetail() {
   currentDetailId = null;
 }
 document.getElementById('modalClose').onclick = closeDetail;
-document.getElementById('modalOverlay').addEventListener('click', (e) => { if (e.target.id === 'modalOverlay') closeDetail(); });
+// Đóng modal khi bấm ra ngoài (backdrop) — PHẢI theo dõi riêng mousedown, không chỉ dựa vào click.
+// Lý do: sự kiện "click" của trình duyệt tính theo vị trí lúc THẢ chuột (mouseup), không phải lúc
+// BẤM chuột (mousedown). Khi người dùng bôi đen/kéo chọn text trong ô input để copy (thao tác quét
+// chuột) mà rê chuột vượt ra ngoài modal trước khi thả, target của "click" sẽ là chính overlay —
+// khiến modal bị đóng ngoài ý muốn dù người dùng không hề bấm vào backdrop. Chỉ đóng khi CẢ mousedown
+// LẪN click đều xảy ra trực tiếp trên overlay (không phải kéo/chọn text từ bên trong ra ngoài).
+let modalOverlayMouseDownOnBackdrop = false;
+document.getElementById('modalOverlay').addEventListener('mousedown', (e) => {
+  modalOverlayMouseDownOnBackdrop = (e.target.id === 'modalOverlay');
+});
+document.getElementById('modalOverlay').addEventListener('click', (e) => {
+  if (e.target.id === 'modalOverlay' && modalOverlayMouseDownOnBackdrop) closeDetail();
+  modalOverlayMouseDownOnBackdrop = false;
+});
 
 async function decide(approved, lyDo) {
   const msg = document.getElementById('decideMsg');
