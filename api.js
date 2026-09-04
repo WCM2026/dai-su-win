@@ -1,6 +1,6 @@
 // api.js — gọi backend Apps Script từ domain khác (GitHub Pages)
 // CẬP NHẬT URL này thành URL Web App đã deploy (Deploy > Manage deployments > copy URL)
-// ⚠️ QUAN TRỌNG — CACHE TRÌNH DUYỆT: các file .html đang nhúng file này qua "api.js?v=14" (có tham
+// ⚠️ QUAN TRỌNG — CACHE TRÌNH DUYỆT: các file .html đang nhúng file này qua "api.js?v=15" (có tham
 // số version). Mỗi khi sửa NỘI DUNG file api.js này, PHẢI tăng số version đó trong TẤT CẢ các thẻ
 // <script src="api.js?v=..."> ở index.html/dashboard.html/admin.html/login.html/resubmit.html —
 // nếu không, trình duyệt (và cả CDN của GitHub Pages) có thể tiếp tục phục vụ bản CŨ đã cache dù
@@ -269,10 +269,12 @@ const Api = {
     async () => {
       let info;
       try { info = await jsonp('resubmitInfo', { id, token }); } catch (e) { return null; }
-      if (info && info.success && info.mode === 'selfEdit' && info.story &&
+      if (info && info.success && info.mode === 'selfEdit' && info.story && info.item &&
           info.story.boiCanh === (fields.boiCanh || '') &&
           info.story.hanhDong === (fields.hanhDong || '') &&
-          info.story.ketQua === (fields.ketQua || '')) {
+          info.story.ketQua === (fields.ketQua || '') &&
+          (fields.nguoiDeXuat === undefined || info.item.nguoiDeXuat === fields.nguoiDeXuat) &&
+          (fields.emailNguoiDeXuat === undefined || info.item.emailNguoiDeXuat === fields.emailNguoiDeXuat)) {
         return { success: true, message: 'Đã lưu thay đổi. Đề cử vẫn đang chờ HRBP duyệt — bạn có thể tiếp tục chỉnh sửa nếu cần.' };
       }
       if (info && !info.success) {
