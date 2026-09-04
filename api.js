@@ -1,6 +1,6 @@
 // api.js — gọi backend Apps Script từ domain khác (GitHub Pages)
 // CẬP NHẬT URL này thành URL Web App đã deploy (Deploy > Manage deployments > copy URL)
-// ⚠️ QUAN TRỌNG — CACHE TRÌNH DUYỆT: các file .html đang nhúng file này qua "api.js?v=13" (có tham
+// ⚠️ QUAN TRỌNG — CACHE TRÌNH DUYỆT: các file .html đang nhúng file này qua "api.js?v=14" (có tham
 // số version). Mỗi khi sửa NỘI DUNG file api.js này, PHẢI tăng số version đó trong TẤT CẢ các thẻ
 // <script src="api.js?v=..."> ở index.html/dashboard.html/admin.html/login.html/resubmit.html —
 // nếu không, trình duyệt (và cả CDN của GitHub Pages) có thể tiếp tục phục vụ bản CŨ đã cache dù
@@ -185,7 +185,29 @@ const Api = {
   // HRBP (đúng phạm vi) hoặc Admin chỉnh sửa nội dung đề cử khi còn ở bước "Chờ HRBP duyệt".
   // Dùng form-POST (như submitNomination) thay vì JSONP vì nội dung Bối cảnh/Hành động/Kết quả có
   // thể là đoạn văn dài, dễ vượt giới hạn độ dài URL nếu gửi qua JSONP (query string).
-  updateNomination: (token, id, fields) => postForm(Object.assign({ action: 'updateNomination', token, id }, fields)),
+  // verifyFn: hỏi lại getDetail() qua JSONP (kênh khác, ổn định hơn) để xác nhận độc lập việc lưu đã
+  // thành công hay chưa — không phụ thuộc cầu nối postMessage giữa iframe lồng nhau (đôi khi không
+  // hoạt động, khiến người dùng chờ hết 90s rồi thấy lỗi timeout dù đã lưu thành công thật — đúng
+  // bug đã gặp và sửa tương tự ở Api.resubmitNomination()).
+  updateNomination: (token, id, fields, onProgress) => postForm(
+    Object.assign({ action: 'updateNomination', token, id }, fields),
+    onProgress,
+    async () => {
+      let info;
+      try { info = await jsonp('detail', { token, id }); } catch (e) { return null; }
+      if (!info || !info.success) return null;
+      const story = info.story || {};
+      const item = info.item || {};
+      const ok =
+        (fields.boiCanh === undefined || story.boiCanh === fields.boiCanh) &&
+        (fields.hanhDong === undefined || story.hanhDong === fields.hanhDong) &&
+        (fields.ketQua === undefined || story.ketQua === fields.ketQua) &&
+        (fields.giaTriCotLoi === undefined || item.GiaTriCotLoi === fields.giaTriCotLoi) &&
+        (fields.nguoiDeXuat === undefined || item.NguoiDeXuat === fields.nguoiDeXuat) &&
+        (fields.emailNguoiDeXuat === undefined || item.EmailNguoiDeXuat === fields.emailNguoiDeXuat);
+      return ok ? { success: true, message: 'Đã lưu thay đổi nội dung đề cử.' } : null;
+    }
+  ),
   // HRBP (đúng phạm vi) hoặc Admin yêu cầu Người viết đề cử bổ sung/chỉnh sửa — gửi email kèm link
   // resubmit.html, KHÔNG còn tính là Từ chối.
   requestEdit: (token, id, lyDo) => jsonp('requestEdit', { token, id, lyDo }),

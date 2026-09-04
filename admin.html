@@ -191,7 +191,7 @@
   </div>
 </div>
 
-<script src="api.js?v=13"></script>
+<script src="api.js?v=14"></script>
 <script>
 const session = Session.requireLogin();
 
@@ -267,13 +267,6 @@ document.getElementById('exportExcelBtn').onclick = async () => {
   const btn = document.getElementById('exportExcelBtn');
   const msgEl = document.getElementById('exportExcelMsg');
   const original = btn.textContent;
-
-  // Mở sẵn 1 tab trắng NGAY lúc bấm (còn trong user-gesture) để trình duyệt không chặn popup —
-  // sau đó chỉ set location.href khi có link tải, KHÔNG gọi window.open() lần nữa sau await
-  // (lúc đó không còn được coi là hành động trực tiếp của người dùng nên chắc chắn bị chặn —
-  // đây chính là nguyên nhân "bấm xong báo tạo file... rồi không thấy gì" dù file đã tạo xong).
-  const downloadTab = window.open('', '_blank');
-
   btn.disabled = true;
   btn.textContent = 'Đang tạo file... (có thể mất vài phút)';
   msgEl.style.display = 'block';
@@ -283,20 +276,13 @@ document.getElementById('exportExcelBtn').onclick = async () => {
     const res = await Api.exportFullExcel(session.token, currentQuarterForExport);
     if (res.success) {
       msgEl.style.color = 'var(--ok)';
-      if (downloadTab && !downloadTab.closed) {
-        downloadTab.location.href = res.downloadUrl;
-        msgEl.textContent = '✅ ' + res.message + ' Đang mở tab tải về...';
-      } else {
-        // Dự phòng nếu tab vẫn bị chặn (hiếm) — hiện link bấm tay thay vì im lặng.
-        msgEl.innerHTML = '✅ ' + res.message + ' <a href="' + res.downloadUrl + '" target="_blank" style="color:inherit;text-decoration:underline;">Bấm vào đây để tải file</a>';
-      }
+      msgEl.textContent = '✅ ' + res.message + ' Đang mở link tải về...';
+      window.open(res.downloadUrl, '_blank');
     } else {
-      if (downloadTab && !downloadTab.closed) downloadTab.close();
       msgEl.style.color = 'var(--err)';
       msgEl.textContent = '❌ ' + res.message;
     }
   } catch (err) {
-    if (downloadTab && !downloadTab.closed) downloadTab.close();
     msgEl.style.color = 'var(--err)';
     msgEl.textContent = '❌ Lỗi kết nối hoặc quá thời gian chờ: ' + err.message;
   } finally {

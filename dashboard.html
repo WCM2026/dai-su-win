@@ -110,7 +110,7 @@
   .tab.active { color:var(--navy); border-color:var(--red); }
 
   /* Modal chi tiết đề cử — thiết kế theo phiếu Excel gốc */
-  .modal-overlay { position:fixed; inset:0; background:rgba(0,31,107,.55); display:flex; align-items:center; justify-content:center; padding:20px; z-index:100; }
+  .modal-overlay { position:fixed; inset:0; background:rgba(0,31,107,.55); display:flex; align-items:flex-start; justify-content:center; padding:20px; overflow-y:auto; z-index:100; }
   .modal-overlay.hidden { display:none; }
   .modal { background:#fff; border-radius:var(--r); max-width:760px; width:100%; max-height:88vh; overflow-y:auto; }
   .modal-head { background:linear-gradient(135deg,#001F6B 0%,var(--navy) 45%,var(--bm) 100%); color:#fff; padding:22px 28px; border-radius:var(--r) var(--r) 0 0; display:flex; justify-content:space-between; align-items:flex-start; gap:16px; }
@@ -294,9 +294,9 @@
         <div class="scope-note" style="margin:-6px 0 14px;">Chỉ chỉnh sửa được nội dung mô tả bên dưới. Họ tên/Chức danh/Ngày vào Tập đoàn của ứng viên được giữ nguyên theo hồ sơ nhân sự lúc nộp.</div>
 
         <label>CBLĐ khối phòng</label>
-        <input type="text" id="eNguoiDeXuat">
+        <input type="text" id="eNguoiDeXuat" autocomplete="off">
         <label>Email CBLĐ</label>
-        <input type="text" id="eEmailNguoiDeXuat">
+        <input type="text" id="eEmailNguoiDeXuat" autocomplete="off">
 
         <label>Bối cảnh</label>
         <textarea id="eBoiCanh"></textarea>
@@ -359,7 +359,7 @@
   </div>
 </div>
 
-<script src="api.js?v=13"></script>
+<script src="api.js?v=14"></script>
 <script>
 const session = Session.requireLogin();
 let currentQuarter = 'all';
@@ -782,7 +782,7 @@ document.getElementById('btnSaveEdit').onclick = async () => {
     const emailNguoiDeXuat = document.getElementById('eEmailNguoiDeXuat').value;
     const res = await Api.updateNomination(session.token, currentDetailId, {
       boiCanh, hanhDong, ketQua, giaTriCotLoi: gtcl, nguoiDeXuat, emailNguoiDeXuat
-    });
+    }, (attempt, max) => { btn.textContent = `Đang xác nhận với hệ thống (${attempt}/${max})...`; });
     msg.className = 'decide-msg ' + (res.success ? 'ok' : 'err');
     msg.textContent = res.message;
     if (res.success) {
