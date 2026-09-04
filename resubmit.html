@@ -94,6 +94,15 @@
 
     <form id="resubmitForm">
       <div class="card">
+        <h2>CBLĐ khối phòng</h2>
+        <label>CBLĐ khối phòng</label>
+        <div class="hint">Từ Rank 3 trở lên — người đứng tên đề xuất</div>
+        <input type="text" id="nguoiDeXuat" required>
+        <label>Email CBLĐ</label>
+        <input type="text" id="emailNguoiDeXuat" required>
+      </div>
+
+      <div class="card">
         <h2>Nội dung đề cử</h2>
         <label>Bối cảnh</label>
         <textarea id="boiCanh" required></textarea>
@@ -201,6 +210,9 @@ async function init() {
     photo.src = candidates[0];
   }
 
+  document.getElementById('nguoiDeXuat').value = it.nguoiDeXuat || '';
+  document.getElementById('emailNguoiDeXuat').value = it.emailNguoiDeXuat || '';
+
   document.getElementById('boiCanh').value = story.boiCanh || '';
   document.getElementById('hanhDong').value = story.hanhDong || '';
   document.getElementById('ketQua').value = story.ketQua || '';
@@ -246,6 +258,8 @@ document.getElementById('resubmitForm').addEventListener('submit', async (e) => 
   status.className = ''; status.textContent = '';
   try {
     const res = await Api.resubmitNomination(id, token, {
+      nguoiDeXuat: document.getElementById('nguoiDeXuat').value,
+      emailNguoiDeXuat: document.getElementById('emailNguoiDeXuat').value,
       boiCanh: document.getElementById('boiCanh').value,
       hanhDong: document.getElementById('hanhDong').value,
       ketQua: document.getElementById('ketQua').value,

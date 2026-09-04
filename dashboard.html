@@ -152,6 +152,10 @@
     width:100%; padding:9px 12px; border:1.5px solid var(--br); border-radius:8px; font-size:13.5px; font-family:inherit; color:var(--tx); margin-bottom:14px; box-sizing:border-box; outline:none; transition:.2s; min-height:72px; resize:vertical;
   }
   .edit-panel textarea:focus { border-color:var(--bm); box-shadow:0 0 0 3px rgba(0,87,184,.1); }
+  .edit-panel input[type=text] {
+    width:100%; padding:9px 12px; border:1.5px solid var(--br); border-radius:8px; font-size:13.5px; font-family:inherit; color:var(--tx); margin-bottom:14px; box-sizing:border-box; outline:none; transition:.2s;
+  }
+  .edit-panel input[type=text]:focus { border-color:var(--bm); box-shadow:0 0 0 3px rgba(0,87,184,.1); }
   .edit-cv-list { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
   .edit-cv-list label { display:flex; align-items:center; gap:6px; font-size:12.5px; font-weight:600; text-transform:none; letter-spacing:normal; color:var(--tx); background:#F5F8FF; padding:7px 14px; border-radius:99px; margin:0; cursor:pointer; }
   .edit-cv-list input[type=checkbox] { width:15px; height:15px; margin:0; }
@@ -288,6 +292,11 @@
       <div class="edit-panel hidden" id="editBox">
         <div class="edit-panel-title">✏️ Chỉnh sửa nội dung đề cử</div>
         <div class="scope-note" style="margin:-6px 0 14px;">Chỉ chỉnh sửa được nội dung mô tả bên dưới. Họ tên/Chức danh/Ngày vào Tập đoàn của ứng viên được giữ nguyên theo hồ sơ nhân sự lúc nộp.</div>
+
+        <label>CBLĐ khối phòng</label>
+        <input type="text" id="eNguoiDeXuat">
+        <label>Email CBLĐ</label>
+        <input type="text" id="eEmailNguoiDeXuat">
 
         <label>Bối cảnh</label>
         <textarea id="eBoiCanh"></textarea>
@@ -725,6 +734,8 @@ document.getElementById('btnConfirmRequestEdit').onclick = async () => {
 
 // ---------- Chỉnh sửa nội dung đề cử (HRBP xét duyệt) ----------
 function openEditBox() {
+  document.getElementById('eNguoiDeXuat').value = currentDetailItem.NguoiDeXuat || '';
+  document.getElementById('eEmailNguoiDeXuat').value = currentDetailItem.EmailNguoiDeXuat || '';
   document.getElementById('eBoiCanh').value = (currentDetailStory && currentDetailStory.boiCanh) || '';
   document.getElementById('eHanhDong').value = (currentDetailStory && currentDetailStory.hanhDong) || '';
   document.getElementById('eKetQua').value = (currentDetailStory && currentDetailStory.ketQua) || '';
@@ -767,8 +778,10 @@ document.getElementById('btnSaveEdit').onclick = async () => {
     const boiCanh = document.getElementById('eBoiCanh').value;
     const hanhDong = document.getElementById('eHanhDong').value;
     const ketQua = document.getElementById('eKetQua').value;
+    const nguoiDeXuat = document.getElementById('eNguoiDeXuat').value;
+    const emailNguoiDeXuat = document.getElementById('eEmailNguoiDeXuat').value;
     const res = await Api.updateNomination(session.token, currentDetailId, {
-      boiCanh, hanhDong, ketQua, giaTriCotLoi: gtcl
+      boiCanh, hanhDong, ketQua, giaTriCotLoi: gtcl, nguoiDeXuat, emailNguoiDeXuat
     });
     msg.className = 'decide-msg ' + (res.success ? 'ok' : 'err');
     msg.textContent = res.message;
@@ -776,10 +789,13 @@ document.getElementById('btnSaveEdit').onclick = async () => {
       // Cập nhật ngay phần hiển thị chi tiết trong modal (không cần gọi lại API) để người dùng
       // thấy nội dung mới ngay lập tức; đóng khối chỉnh sửa sau một nhịp ngắn để họ kịp đọc thông báo.
       currentDetailItem.GiaTriCotLoi = gtcl;
+      currentDetailItem.NguoiDeXuat = nguoiDeXuat;
+      currentDetailItem.EmailNguoiDeXuat = emailNguoiDeXuat;
       currentDetailStory = { boiCanh, hanhDong, ketQua };
       document.getElementById('mBoiCanh').textContent = boiCanh || '—';
       document.getElementById('mHanhDong').textContent = hanhDong || '—';
       document.getElementById('mKetQua').textContent = ketQua || '—';
+      document.getElementById('mNguoiDeXuat').textContent = nguoiDeXuat ? `${nguoiDeXuat} (${emailNguoiDeXuat || ''})` : '—';
       document.getElementById('mGtcl').innerHTML = gtcl.split(',').map(s => s.trim()).filter(Boolean).map(v => `<span class="cv-tag">${v}</span>`).join('') || '<span style="color:var(--tm);font-size:13px;">Chưa chọn</span>';
       loadAll();
       setTimeout(() => closeEditBox(true), 900);
