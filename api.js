@@ -1,6 +1,6 @@
 // api.js — gọi backend Apps Script từ domain khác (GitHub Pages)
 // CẬP NHẬT URL này thành URL Web App đã deploy (Deploy > Manage deployments > copy URL)
-// ⚠️ QUAN TRỌNG — CACHE TRÌNH DUYỆT: các file .html đang nhúng file này qua "api.js?v=16" (có tham
+// ⚠️ QUAN TRỌNG — CACHE TRÌNH DUYỆT: các file .html đang nhúng file này qua "api.js?v=17" (có tham
 // số version). Mỗi khi sửa NỘI DUNG file api.js này, PHẢI tăng số version đó trong TẤT CẢ các thẻ
 // <script src="api.js?v=..."> ở index.html/dashboard.html/admin.html/login.html/resubmit.html —
 // nếu không, trình duyệt (và cả CDN của GitHub Pages) có thể tiếp tục phục vụ bản CŨ đã cache dù
@@ -91,13 +91,14 @@ function postForm(fields, onProgress, verifyFn) {
     form.remove();
 
     // DỰ PHÒNG: cầu nối postMessage qua iframe ẩn đôi khi không đáng tin cậy (tùy trình duyệt/mạng),
-    // dù backend đã ghi/cập nhật dữ liệu thành công. Nếu có verifyFn (hoặc request có clientKey, dùng
-    // mặc định là kiểm tra checkClientKey) — chủ động hỏi lại server bằng JSONP (kênh GET đơn giản,
-    // đã chứng minh hoạt động ổn định) để xác nhận độc lập, không cần chờ postMessage nữa.
+    // dù backend đã xử lý xong (thành công HAY thất bại có lý do). Nếu có verifyFn tuỳ chỉnh thì dùng
+    // verifyFn đó; nếu request có clientKey thì mặc định hỏi lại checkOperationStatus() — dò được
+    // ĐÚNG kết quả thật (kể cả trường hợp bị từ chối hợp lệ, VD hết quota) chứ không chỉ dò được
+    // "đã ghi dòng mới" như checkClientKey cũ (xem ghi chú trong code.gs).
     const effectiveVerify = verifyFn || (fields && fields.clientKey
       ? async () => {
-          const res = await jsonp('checkClientKey', { clientKey: fields.clientKey });
-          return (res && res.found) ? { success: true, message: 'Đã nộp đề cử thành công!' } : null;
+          const res = await jsonp('checkOperationStatus', { clientKey: fields.clientKey });
+          return (res && res.found) ? { success: !!res.success, message: res.message } : null;
         }
       : null);
     if (effectiveVerify) {
@@ -196,8 +197,8 @@ const Api = {
       onProgress,
       async () => {
         let res;
-        try { res = await jsonp('checkClientKey', { clientKey }); } catch (e) { return null; }
-        return (res && res.found) ? { success: true, message: 'Đã lưu thay đổi nội dung đề cử.' } : null;
+        try { res = await jsonp('checkOperationStatus', { clientKey }); } catch (e) { return null; }
+        return (res && res.found) ? { success: !!res.success, message: res.message } : null;
       }
     );
   },
@@ -235,6 +236,7 @@ const Api = {
   // Quota đăng ký theo đơn vị trong 1 Quý (công khai, không cần đăng nhập)
   getQuotaOverview: (quy) => jsonp('quotaOverview', { quy }),
   checkClientKey: (clientKey) => jsonp('checkClientKey', { clientKey }),
+  checkOperationStatus: (clientKey) => jsonp('checkOperationStatus', { clientKey }),
   getVersion: () => jsonp('version'),
 
   // Export
@@ -266,8 +268,8 @@ const Api = {
       onProgress,
       async () => {
         let res;
-        try { res = await jsonp('checkClientKey', { clientKey }); } catch (e) { return null; }
-        return (res && res.found) ? { success: true, message: 'Đã lưu thay đổi thành công!' } : null;
+        try { res = await jsonp('checkOperationStatus', { clientKey }); } catch (e) { return null; }
+        return (res && res.found) ? { success: !!res.success, message: res.message } : null;
       }
     );
   }
