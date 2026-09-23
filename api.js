@@ -1,6 +1,6 @@
 // api.js — gọi backend Apps Script từ domain khác (GitHub Pages)
 // CẬP NHẬT URL này thành URL Web App đã deploy (Deploy > Manage deployments > copy URL)
-// ⚠️ QUAN TRỌNG — CACHE TRÌNH DUYỆT: các file .html đang nhúng file này qua "api.js?v=17" (có tham
+// ⚠️ QUAN TRỌNG — CACHE TRÌNH DUYỆT: các file .html đang nhúng file này qua "api.js?v=18" (có tham
 // số version). Mỗi khi sửa NỘI DUNG file api.js này, PHẢI tăng số version đó trong TẤT CẢ các thẻ
 // <script src="api.js?v=..."> ở index.html/dashboard.html/admin.html/login.html/resubmit.html —
 // nếu không, trình duyệt (và cả CDN của GitHub Pages) có thể tiếp tục phục vụ bản CŨ đã cache dù
@@ -212,7 +212,10 @@ const Api = {
   // Quarters
   getQuarters: () => jsonp('quarters'),
   getActiveQuarter: () => jsonp('activeQuarter'),
-  addQuarter: (token, tenQuy, hanB1, hanB2, hanB3) => jsonp('addQuarter', { token, tenQuy, hanB1, hanB2, hanB3 }),
+  addQuarter: (token, tenQuy, hanB1, hanB2, hanB3, ngayMo, cheDo) => jsonp('addQuarter', { token, tenQuy, hanB1, hanB2, hanB3, ngayMo: ngayMo || '', cheDo: cheDo || 'Tự động' }),
+  // Admin cấu hình đóng/mở form nộp đề cử của 1 Quý: cheDo = 'Tự động' | 'Mở thủ công' | 'Đóng thủ công',
+  // ngayMo = ngày tự mở (yyyy-MM-dd, có thể trống), hanB1 = hạn đóng tự động (cũng là 🅑1 Hạn đơn vị đề cử).
+  updateQuarterForm: (token, maQuy, cheDo, ngayMo, hanB1) => jsonp('updateQuarterForm', { token, maQuy, cheDo, ngayMo: ngayMo || '', hanB1: hanB1 || '' }),
   removeQuarter: (token, maQuy) => jsonp('removeQuarter', { token, maQuy }),
   setActiveQuarter: (token, maQuy) => jsonp('setActiveQuarter', { token, maQuy }),
 

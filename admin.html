@@ -77,6 +77,23 @@
   .status-pending { color:var(--warn); font-weight:700; font-size:12px; }
   .row-remove { width:auto; background:none; border:1px solid rgba(245,59,59,.3); color:var(--red); padding:5px 12px; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer; }
   .row-remove:hover { background:var(--err-bg); }
+  /* Cấu hình đóng/mở form nộp đề cử theo Quý */
+  .qcard { border-radius:12px !important; }
+  .form-ctl { width:100%; margin-top:8px; padding:10px 12px; border-radius:10px; background:#fff; border:1px solid var(--br); }
+  .form-ctl-head { display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:12px; font-weight:800; color:var(--navy); margin-bottom:8px; }
+  .form-pill { font-size:11px; font-weight:700; padding:3px 10px; border-radius:99px; }
+  .form-pill.open { background:var(--ok-bg); color:var(--ok); }
+  .form-pill.wait { background:var(--warn-bg); color:var(--warn); }
+  .form-pill.closed { background:var(--err-bg); color:var(--err); }
+  .form-pill.off { background:#DDE4F0; color:#6B7A99; }
+  .form-ctl-row { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
+  .form-ctl-row label { display:block; font-size:10.5px; color:var(--muted); margin-bottom:3px; font-weight:700; }
+  .form-ctl-row select, .form-ctl-row input { padding:7px 10px; border:1.5px solid var(--br); border-radius:8px; font-size:12.5px; font-family:"Be Vietnam Pro",sans-serif; }
+  .form-ctl-row input:disabled { background:#F0F4FA; color:var(--muted); }
+  .form-ctl .qtag-save { background:var(--bd); color:#fff; border:none; padding:8px 14px; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer; font-family:"Be Vietnam Pro",sans-serif; }
+  .form-ctl .qtag-save:hover { background:var(--bm); }
+  .form-ctl .qtag-save:disabled { opacity:.6; cursor:not-allowed; }
+  .form-ctl-hint { font-size:11.5px; color:var(--muted); margin-top:6px; }
 </style>
 </head>
 <body>
@@ -121,7 +138,11 @@
             <input id="newQuarterName" placeholder="VD: Quý III - 2026" style="min-width:200px;">
           </div>
           <div>
-            <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;">🅑1 Hạn đơn vị đề cử</label>
+            <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;">📅 Ngày mở form (không bắt buộc)</label>
+            <input id="newNgayMo" type="date">
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;">🅑1 Hạn đơn vị đề cử (= tự đóng form)</label>
             <input id="newHan1" type="date">
           </div>
           <div>
@@ -191,7 +212,7 @@
   </div>
 </div>
 
-<script src="api.js?v=17"></script>
+<script src="api.js?v=18"></script>
 <script>
 const session = Session.requireLogin();
 
@@ -217,15 +238,82 @@ let currentQuarterForExport = 'all';
 function fmtDate(d) { if (!d) return '—'; const dt = new Date(d); return isNaN(dt) ? d : dt.toLocaleDateString('vi-VN'); }
 
 // ---------- Quarters ----------
+const FORM_MODE_HINTS = {
+  'Tự động': 'Form tự mở từ "Ngày mở" (bỏ trống = mở ngay khi Quý được kích hoạt) và tự đóng sau hết ngày "Hạn đóng".',
+  'Mở thủ công': 'Form luôn mở, bỏ qua ngày mở/hạn đóng — dùng khi cần gia hạn đột xuất. Nhớ chuyển lại "Tự động" hoặc "Đóng thủ công" khi xong.',
+  'Đóng thủ công': 'Form đóng ngay lập tức, bất kể ngày — trang nộp hiện thông báo "Chưa đến thời hạn đề cử Quý tiếp theo".'
+};
+function formPillClass(fs) {
+  if (!fs) return 'off';
+  if (fs.open) return 'open';
+  if (fs.reason === 'notYet') return 'wait';
+  if (fs.reason === 'inactive') return 'off';
+  return 'closed';
+}
+function renderFormControl(q) {
+  const fs = q.FormStatus || {};
+  const mode = fs.mode || 'Tự động';
+  const id = q.MaQuy;
+  const isAuto = mode === 'Tự động';
+  return `<div class="form-ctl">
+    <div class="form-ctl-head">📝 Form nộp đề cử:
+      <span class="form-pill ${formPillClass(fs)}" id="fpill-${id}">${fs.open ? '● ' : ''}${esc(fs.label || '—')}</span>
+    </div>
+    <div class="form-ctl-row">
+      <div>
+        <label>Chế độ</label>
+        <select id="fmode-${id}" onchange="onFormModeChange('${id}')">
+          ${['Tự động', 'Mở thủ công', 'Đóng thủ công'].map(m => `<option value="${m}" ${m === mode ? 'selected' : ''}>${m}</option>`).join('')}
+        </select>
+      </div>
+      <div>
+        <label>📅 Ngày mở form</label>
+        <input type="date" id="fopen-${id}" value="${fs.openKey || ''}" ${isAuto ? '' : 'disabled'}>
+      </div>
+      <div>
+        <label>🅑1 Hạn đóng form</label>
+        <input type="date" id="fclose-${id}" value="${fs.closeKey || ''}">
+      </div>
+      <button class="qtag-save" id="fsave-${id}" onclick="saveFormConfig('${id}')">Lưu cấu hình form</button>
+    </div>
+    <div class="form-ctl-hint" id="fhint-${id}">${esc(FORM_MODE_HINTS[mode] || '')}${q.TrangThai === 'Active' ? '' : ' · Quý này chưa kích hoạt nên form chưa nhận đề cử dù cấu hình thế nào.'}</div>
+  </div>`;
+}
+function onFormModeChange(id) {
+  const mode = document.getElementById('fmode-' + id).value;
+  document.getElementById('fopen-' + id).disabled = mode !== 'Tự động';
+  const q = ALL_QUARTERS.find(x => x.MaQuy === id);
+  document.getElementById('fhint-' + id).textContent = (FORM_MODE_HINTS[mode] || '') + (q && q.TrangThai !== 'Active' ? ' · Quý này chưa kích hoạt nên form chưa nhận đề cử dù cấu hình thế nào.' : '');
+}
+async function saveFormConfig(id) {
+  const mode = document.getElementById('fmode-' + id).value;
+  const ngayMo = document.getElementById('fopen-' + id).value;
+  const hanB1 = document.getElementById('fclose-' + id).value;
+  const q = ALL_QUARTERS.find(x => x.MaQuy === id);
+  if (mode !== 'Tự động' && q && q.TrangThai === 'Active' &&
+      !confirm(`${mode === 'Đóng thủ công' ? 'ĐÓNG' : 'MỞ'} form nộp đề cử của "${q.TenQuy}" ngay bây giờ, bỏ qua ngày mở/hạn đóng?`)) return;
+  const btn = document.getElementById('fsave-' + id);
+  const original = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Đang lưu...';
+  try {
+    const res = await Api.updateQuarterForm(session.token, id, mode, ngayMo, hanB1);
+    alert(res.message);
+    if (res.success) loadQuarters();
+  } catch (err) {
+    alert(err.message || 'Không lưu được cấu hình form.');
+  } finally {
+    btn.disabled = false; btn.textContent = original;
+  }
+}
 async function loadQuarters() {
   const res = await Api.getQuarters();
   ALL_QUARTERS = res.items;
   document.getElementById('quarterList').innerHTML = res.items.map(q => {
     const isActive = q.TrangThai === 'Active';
-    return `<div class="qtag" style="align-items:flex-start;flex-direction:column;gap:4px;${isActive ? 'border:1.5px solid #00875F;background:rgba(0,196,140,.12);' : ''}">
+    return `<div class="qtag qcard" style="align-items:flex-start;flex-direction:column;gap:4px;${isActive ? 'border:1.5px solid #00875F;background:rgba(0,196,140,.12);' : ''}">
       <div style="display:flex;align-items:center;gap:10px;width:100%;">
         <b style="font-size:14px;">${q.TenQuy}</b>
-        <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;${isActive ? 'background:#00875F;color:#fff;' : 'background:#DDE4F0;color:#6B7A99;'}">${isActive ? '● ĐANG MỞ' : 'Đã đóng'}</span>
+        <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;${isActive ? 'background:#00875F;color:#fff;' : 'background:#DDE4F0;color:#6B7A99;'}">${isActive ? '● ĐANG XỬ LÝ' : 'Không hoạt động'}</span>
         ${isActive ? '' : `<button class="btn secondary" style="padding:4px 12px;font-size:11px;" onclick="activateQuarter('${q.MaQuy}')">Kích hoạt</button>`}
         <button onclick="removeQuarter('${q.MaQuy}')" style="margin-left:auto;">✕</button>
       </div>
@@ -234,6 +322,7 @@ async function loadQuarters() {
         🅑2 Hạn HRBP tổng hợp: <b>${fmtDate(q.HanB2_HRBPTongHop)}</b> &nbsp;·&nbsp;
         🅑3 Hạn phê duyệt & đề cử thành công: <b>${fmtDate(q.HanB3_PheDuyet)}</b>
       </div>
+      ${renderFormControl(q)}
     </div>`;
   }).join('');
 
@@ -255,10 +344,13 @@ async function activateQuarter(maQuy) {
 document.getElementById('addQuarterBtn').onclick = async () => {
   const tenQuy = document.getElementById('newQuarterName').value.trim();
   const h1 = document.getElementById('newHan1').value, h2 = document.getElementById('newHan2').value, h3 = document.getElementById('newHan3').value;
+  const ngayMo = document.getElementById('newNgayMo').value;
   if (!tenQuy) return alert('Nhập tên Quý.');
-  const res = await Api.addQuarter(session.token, tenQuy, h1, h2, h3);
+  if (ngayMo && h1 && ngayMo > h1) return alert('Ngày mở form phải trước hoặc bằng 🅑1 Hạn đơn vị đề cử.');
+  const res = await Api.addQuarter(session.token, tenQuy, h1, h2, h3, ngayMo, 'Tự động');
   alert(res.message);
   document.getElementById('newQuarterName').value = '';
+  document.getElementById('newNgayMo').value = '';
   loadQuarters();
 };
 document.getElementById('exportBtn').onclick = () => window.open(Api.exportCsvUrl(session.token, currentQuarterForExport), '_blank');

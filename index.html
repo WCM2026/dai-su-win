@@ -159,6 +159,13 @@
   .gate-msg.ok { color:var(--ok); }
   .gate-msg.err { color:var(--err); }
   .gate-verified-badge { display:inline-flex; align-items:center; gap:6px; background:var(--ok-bg); color:var(--ok); font-size:12.5px; font-weight:700; padding:6px 12px; border-radius:99px; margin-bottom:16px; }
+  /* Thông báo khi form đề cử đang đóng (hết hạn / chưa tới ngày mở / Admin đóng thủ công) */
+  .form-closed { text-align:center; padding:26px 18px 22px; border-radius:var(--r); background:linear-gradient(180deg,rgba(0,87,184,.06),rgba(255,184,0,.08)); border:1.5px solid var(--br); }
+  .form-closed .fc-icon { font-size:40px; line-height:1; margin-bottom:10px; }
+  .form-closed .fc-title { font-size:18px; font-weight:800; color:var(--navy); margin:0 0 8px; }
+  .form-closed .fc-sub { font-size:14px; color:var(--tx); line-height:1.6; margin:0 auto; max-width:480px; }
+  .form-closed .fc-next { display:inline-block; margin-top:14px; padding:8px 16px; border-radius:99px; background:var(--warn-bg); color:var(--warn); font-size:13px; font-weight:700; }
+  .form-closed .fc-foot { font-size:12px; color:var(--muted); margin-top:14px; }
   .hidden { display:none !important; }
 </style>
 </head>
@@ -187,7 +194,7 @@
 
   <form id="nominationForm">
     <div class="card" id="quarterCard">
-      <h2>Quý đang mở đăng ký</h2>
+      <h2 id="quarterCardTitle">Quý đang mở đăng ký</h2>
       <div id="quarterInfo" class="quarter-info">Đang kiểm tra Quý đang mở...</div>
 
       <div class="quota-toggle" id="quotaToggle">
@@ -199,7 +206,7 @@
       </div>
     </div>
 
-    <div class="card">
+    <div class="card" id="unitCard">
       <h2>1. Đơn vị đề xuất</h2>
       <div class="row">
         <div>
@@ -291,7 +298,7 @@
   </div>
 </div>
 
-<script src="api.js?v=17"></script>
+<script src="api.js?v=18"></script>
 <script>
 let activeQuarter = null; // { MaQuy, TenQuy, ... }
 const MAX_CANDIDATES = 3;
@@ -365,9 +372,51 @@ document.getElementById('quotaToggle').onclick = async () => {
   renderQuotaPanel(data);
 };
 
+// Hiển thị thông báo khi form KHÔNG nhận đề cử — ẩn toàn bộ phần phiếu đề cử, chỉ giữ lại mục tra
+// cứu tiến trình ở trên (người nộp vẫn cần xem đề cử đã nộp đang tới bước nào).
+function renderFormClosed(closed) {
+  closed = closed || {};
+  const tenQuy = closed.tenQuy ? esc(closed.tenQuy) : '';
+  let icon = '⏳', sub = '';
+  switch (closed.reason) {
+    case 'expired':
+      icon = '🏁';
+      sub = `Đợt nhận đề cử <b>${tenQuy}</b> đã kết thúc` + (closed.closeLabel ? ` vào ngày <b>${esc(closed.closeLabel)}</b>` : '') + '. Xin cảm ơn Anh/Chị đã đồng hành cùng chương trình.';
+      break;
+    case 'manualClosed':
+      icon = '🏁';
+      sub = `Đợt nhận đề cử <b>${tenQuy}</b> hiện đã đóng. Xin cảm ơn Anh/Chị đã đồng hành cùng chương trình.`;
+      break;
+    case 'notYet':
+      sub = `<b>${tenQuy}</b> sẽ bắt đầu nhận đề cử từ ngày <b>${esc(closed.openLabel)}</b>. Anh/Chị vui lòng quay lại khi đến thời hạn.`;
+      break;
+    default:
+      sub = 'Hiện chưa mở đợt nhận đề cử mới. Thông tin về Quý tiếp theo sẽ được PTVH thông báo tới Anh/Chị.';
+  }
+  const next = closed.nextQuarter
+    ? `<div class="fc-next">📅 ${esc(closed.nextQuarter.tenQuy)} dự kiến mở nhận đề cử từ ${esc(closed.nextQuarter.openLabel)}</div>`
+    : '';
+
+  document.getElementById('quarterCardTitle').textContent = 'Thông báo';
+  const el = document.getElementById('quarterInfo');
+  el.className = '';
+  el.innerHTML = `
+    <div class="form-closed">
+      <div class="fc-icon">${icon}</div>
+      <div class="fc-title">Chưa đến thời hạn đề cử Quý tiếp theo</div>
+      <div class="fc-sub">${sub}</div>
+      ${next}
+      <div class="fc-foot">Anh/Chị vẫn có thể tra cứu tiến trình các đề cử đã nộp ở mục phía trên. Mọi thắc mắc xin liên hệ Phòng Phát triển Văn hóa (PTVH).</div>
+    </div>`;
+  document.getElementById('quotaToggle').classList.add('hidden');
+  document.getElementById('quotaBody').classList.add('hidden');
+  document.getElementById('unitCard').classList.add('hidden');
+  document.getElementById('formRestSections').classList.add('hidden');
+  document.getElementById('submitBtn').disabled = true;
+}
+
 Api.getActiveQuarter().then(res => {
   const el = document.getElementById('quarterInfo');
-  const btn = document.getElementById('submitBtn');
   if (res.success && res.item) {
     activeQuarter = res.item;
     el.className = 'quarter-info open';
@@ -375,10 +424,14 @@ Api.getActiveQuarter().then(res => {
     el.innerHTML = `🟢 Đang nhận đề cử cho: ${esc(res.item.TenQuy)}` + (hanNop ? `<div class="quarter-deadline">⏰ Hạn gửi đề cử: <b>${hanNop}</b></div>` : '');
     fetchQuotaData(); // tải trước, không chờ người dùng mở panel/chọn Loại đơn vị mới tải
   } else {
-    el.className = 'quarter-info closed';
-    el.textContent = '🔴 Hiện không có Quý nào đang mở đăng ký. Vui lòng liên hệ PTVH/Admin.';
-    btn.disabled = true;
+    renderFormClosed(res && res.closed);
   }
+}).catch(() => {
+  const el = document.getElementById('quarterInfo');
+  el.className = 'quarter-info closed';
+  el.textContent = '⚠️ Không kết nối được tới hệ thống để kiểm tra đợt đề cử. Vui lòng tải lại trang (Ctrl+Shift+R) hoặc thử lại sau.';
+  document.getElementById('unitCard').classList.add('hidden');
+  document.getElementById('submitBtn').disabled = true;
 });
 
 // ---------- Cổng kiểm tra quyền nộp đề cử (chỉ WinMart/MiniMart — SSC không giới hạn) ----------
