@@ -874,45 +874,213 @@ async function getAllDeptLists() {
   return deptCache;
 }
 
+// ---------- File mẫu Excel dạng "phiếu điền" (ExcelJS: có drop list + định dạng màu) ----------
+// SheetJS (dùng để ĐỌC file) không ghi được drop list/định dạng, nên file mẫu được tạo bằng ExcelJS.
+// Danh mục Miền/Vùng/Khối-Phòng lấy trực tiếp từ hệ thống lúc tải -> đúng với sheet DanhMucKhoiPhong.
+const EXCELJS_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js';
+let exceljsLoading = null;
+function loadExcelJsLib() {
+  if (window.ExcelJS) return Promise.resolve(window.ExcelJS);
+  if (exceljsLoading) return exceljsLoading;
+  exceljsLoading = new Promise((resolve, reject) => {
+    const sc = document.createElement('script');
+    sc.src = EXCELJS_CDN;
+    sc.onload = () => resolve(window.ExcelJS);
+    sc.onerror = () => { exceljsLoading = null; reject(new Error('Không tải được thư viện tạo file Excel — vui lòng kiểm tra kết nối mạng (có thể mạng công ty chặn cdnjs.cloudflare.com) rồi thử lại.')); };
+    document.head.appendChild(sc);
+  });
+  return exceljsLoading;
+}
+
+const TPL_ROWS = 30;
+const TPL_FONT = 'Be Vietnam Pro';
+const TPL_C = { navy: 'FF003087', mid: 'FF0057B8', gold: 'FFFFB800', bg: 'FFF0F4FA', line: 'FFDDE4F0', muted: 'FF6B7A99', tx: 'FF1A2340', req: 'FFFF6B35', opt: 'FFE3EAF6', ok: 'FF00875F', band: 'FFF7F9FD' };
+const TPL_GROUPS = {
+  1: ['1. ĐƠN VỊ ĐỀ XUẤT', 'FF1F4FA8'], 2: ['2. CBLĐ & NGƯỜI VIẾT ĐỀ CỬ', 'FF2A63B8'], 3: ['3. ỨNG VIÊN', 'FFB87800'],
+  4: ['4. CÂU CHUYỆN ĐỀ CỬ', 'FF00875F'], 5: ['5. GIÁ TRỊ CỐT LÕI (chọn x)', 'FF7A3FB0']
+};
+// Tiêu đề cột PHẢI trùng với XL_COLS/CV_KEYS (bộ đọc file khớp cột theo tên tiêu đề).
+const CV_SHORT = {
+  'WIN PHỤNG SỰ': 'Kiên định với hành trình phụng sự người tiêu dùng', 'WIN SÁNG TẠO': 'Kiên định tạo ra giá trị chuyển đổi',
+  'WIN TỰ CHỦ': 'Kiên định với tinh thần doanh nhân', 'WIN KIÊN ĐỊNH': 'Kiên định với tầm nhìn dài hạn', 'WIN KHÁT VỌNG': 'Kiên định với mục tiêu lý tưởng'
+};
+const TPL_COLS = [
+  { title: 'STT', w: 5, g: 0 },
+  { title: 'Loại đơn vị', w: 13, g: 1, req: true, kind: 'loai', prompt: 'Chọn WinMart / MiniMart / SSC từ danh sách ▼' },
+  { title: 'Miền / Vùng / Khối-Phòng', w: 28, g: 1, req: true, kind: 'dept', prompt: 'Chọn ▼ — danh sách tự đổi theo Loại đơn vị đã chọn' },
+  { title: 'Khối/Bộ phận/Cơ sở', w: 24, g: 1, req: true, prompt: 'VD: Cửa hàng Nguyễn Trãi / Phòng Mua hàng' },
+  { title: 'CBLĐ khối phòng', w: 22, g: 2, req: true, prompt: 'Họ tên CBLĐ từ Rank 3 trở lên — người đứng tên đề cử' },
+  { title: 'Email CBLĐ', w: 28, g: 2, req: true, prompt: 'Email công ty của CBLĐ' },
+  { title: 'Người viết đề cử', w: 22, g: 2, req: true, prompt: 'Người trực tiếp nhập đề cử — nhận email xác nhận & link bổ sung ảnh' },
+  { title: 'Email người viết đề cử', w: 28, g: 2, req: true, prompt: 'WinMart/MiniMart: email phải có trong danh sách được phép nộp' },
+  { title: 'MSNV ứng viên', w: 14, g: 3, req: true, kind: 'msnv', prompt: 'Mã số nhân viên — hệ thống tự tra Họ tên, Chức danh, Ngày vào Tập đoàn' },
+  { title: 'Bối cảnh', w: 42, g: 4, req: true, kind: 'story', prompt: 'Tình huống / thách thức ứng viên gặp phải' },
+  { title: 'Hành động / đóng góp', w: 42, g: 4, req: true, kind: 'story', prompt: 'Ứng viên đã làm gì, cụ thể ra sao' },
+  { title: 'Kết quả nhận được', w: 42, g: 4, req: true, kind: 'story', prompt: 'Kết quả đo lường được / ghi nhận từ khách hàng, đồng nghiệp' }
+].concat(['WIN PHỤNG SỰ', 'WIN SÁNG TẠO', 'WIN TỰ CHỦ', 'WIN KIÊN ĐỊNH', 'WIN KHÁT VỌNG'].map(k => ({ title: k, w: 14, g: 5, kind: 'cv', prompt: `${k}: ${CV_SHORT[k]}. Chọn x nếu phù hợp` })));
+
+function buildTemplateWorkbook(ExcelJS, depts, tenQuy) {
+  const C = TPL_C, NC = TPL_COLS.length, HDR = 4, FIRST = 5, LAST = FIRST + TPL_ROWS - 1;
+  const fill = argb => ({ type: 'pattern', pattern: 'solid', fgColor: { argb } });
+  const thin = { style: 'thin', color: { argb: C.line } };
+  const box = { top: thin, left: thin, bottom: thin, right: thin };
+  const font = (o = {}) => Object.assign({ name: TPL_FONT, size: 10, color: { argb: C.tx } }, o);
+  const colL = i => { let s = ''; while (i > 0) { const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; };
+  const loaiList = ['WinMart', 'MiniMart', 'SSC'];
+
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'Đại sứ WIN';
+  const ws = wb.addWorksheet('DeCu', { views: [{ state: 'frozen', xSplit: 2, ySplit: HDR, showGridLines: false }],
+    pageSetup: { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0, printTitlesRow: `${HDR - 1}:${HDR}` } });
+  const hd = wb.addWorksheet('HuongDan', { views: [{ showGridLines: false }] });
+  const dm = wb.addWorksheet('DanhMuc', { views: [{ showGridLines: false }] });
+
+  TPL_COLS.forEach((c, i) => { ws.getColumn(i + 1).width = c.w; });
+
+  // Dòng 1: tiêu đề
+  ws.mergeCells(1, 1, 1, NC);
+  const t = ws.getCell(1, 1);
+  t.value = `PHIẾU ĐỀ CỬ ĐẠI SỨ WIN${tenQuy ? ' — ' + String(tenQuy).toUpperCase() : ''}`;
+  t.font = font({ size: 16, bold: true, color: { argb: 'FFFFFFFF' } });
+  t.fill = fill(C.navy); t.alignment = { vertical: 'middle', indent: 1 };
+  t.border = { bottom: { style: 'thick', color: { argb: C.gold } } };
+  ws.getRow(1).height = 34;
+  // Dòng 2: hướng dẫn nhanh
+  ws.mergeCells(2, 1, 2, NC);
+  const g2 = ws.getCell(2, 1);
+  g2.value = `Mỗi ứng viên điền 1 dòng (tối đa ${TPL_ROWS})  ·  Ô có ▼ chọn từ danh sách  ·  Cột tiêu đề màu cam là BẮT BUỘC  ·  Nhóm 1–2 để trống = tự lấy theo dòng phía trên  ·  Ảnh chân dung bổ sung trên web sau khi gửi  ·  Xem sheet "HuongDan"`;
+  g2.font = font({ italic: true, color: { argb: C.muted } }); g2.fill = fill(C.bg);
+  g2.alignment = { vertical: 'middle', indent: 1, wrapText: true };
+  ws.getRow(2).height = 30;
+  // Dòng 3: nhóm cột
+  const span = {};
+  TPL_COLS.forEach((c, i) => { span[c.g] = span[c.g] || [i + 1, i + 1]; span[c.g][1] = i + 1; });
+  Object.keys(span).forEach(g => {
+    const [a, b] = span[g];
+    if (+g === 0) { ws.getCell(3, a).fill = fill(C.navy); return; }
+    const [name, color] = TPL_GROUPS[g];
+    if (b > a) ws.mergeCells(3, a, 3, b);
+    const cell = ws.getCell(3, a);
+    cell.value = name; cell.font = font({ bold: true, color: { argb: 'FFFFFFFF' } });
+    cell.alignment = { horizontal: 'center', vertical: 'middle' };
+    for (let k = a; k <= b; k++) { ws.getCell(3, k).fill = fill(color); ws.getCell(3, k).border = box; }
+  });
+  ws.getRow(3).height = 22;
+  // Dòng 4: tiêu đề cột
+  TPL_COLS.forEach((c, i) => {
+    const cell = ws.getCell(HDR, i + 1);
+    cell.value = c.title;
+    cell.font = font({ bold: true, color: { argb: c.req ? 'FFFFFFFF' : C.navy } });
+    cell.fill = fill(c.req ? C.req : C.opt);
+    cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    cell.border = box;
+  });
+  ws.getRow(HDR).height = 36;
+
+  // Sheet DanhMuc + tên vùng (named range) cho drop list phụ thuộc
+  dm.getColumn(1).width = 16;
+  const h1 = dm.getCell(1, 1); h1.value = 'Loại đơn vị'; h1.font = font({ bold: true, color: { argb: 'FFFFFFFF' } }); h1.fill = fill(C.navy);
+  loaiList.forEach((l, i) => { dm.getCell(i + 2, 1).value = l; });
+  wb.definedNames.add(`DanhMuc!$A$2:$A$${loaiList.length + 1}`, 'DS_LoaiDonVi');
+  let maxLen = 0;
+  loaiList.forEach((l, j) => {
+    const col = j + 3, L = colL(col);
+    const items = (depts[l] && depts[l].length) ? depts[l] : ['(chưa có danh mục)'];
+    maxLen = Math.max(maxLen, items.length);
+    dm.getColumn(col).width = 38;
+    const h = dm.getCell(1, col); h.value = `${l} — Miền/Vùng/Khối-Phòng`; h.font = font({ bold: true, color: { argb: 'FFFFFFFF' } }); h.fill = fill(C.mid);
+    items.forEach((v, k) => { dm.getCell(k + 2, col).value = v; });
+    wb.definedNames.add(`DanhMuc!$${L}$2:$${L}$${items.length + 1}`, `DS_${l}`);
+  });
+  const note = dm.getCell(maxLen + 3, 1);
+  note.value = 'Danh mục lấy tự động từ hệ thống tại thời điểm tải file mẫu — không cần sửa sheet này.';
+  note.font = font({ italic: true, color: { argb: C.muted } });
+
+  // Dòng dữ liệu + drop list + gợi ý khi chọn ô
+  for (let r = FIRST; r <= LAST; r++) {
+    ws.getRow(r).height = 48;
+    const band = (r - FIRST) % 2 === 0 ? 'FFFFFFFF' : C.band;
+    TPL_COLS.forEach((c, i) => {
+      const cell = ws.getCell(r, i + 1);
+      cell.border = box; cell.fill = fill(band); cell.font = font();
+      if (i === 0) {
+        cell.value = r - FIRST + 1; cell.font = font({ bold: true, color: { argb: C.muted } });
+        cell.alignment = { horizontal: 'center', vertical: 'top' };
+        return;
+      }
+      if (c.kind === 'cv') { cell.alignment = { horizontal: 'center', vertical: 'middle' }; cell.font = font({ size: 12, bold: true, color: { argb: C.ok } }); }
+      else if (c.kind === 'msnv') { cell.numFmt = '@'; cell.alignment = { horizontal: 'center', vertical: 'top' }; }
+      else cell.alignment = { vertical: 'top', wrapText: true };
+
+    });
+  }
+
+  // Drop list + gợi ý: khai báo 1 lần cho CẢ CỘT (không gán từng ô) — ExcelJS gộp validation từng ô
+  // thành các dải chồng lấn nhau, khiến Excel báo "file bị lỗi". Công thức INDIRECT dùng $B${FIRST}
+  // (tham chiếu tương đối theo dòng) nên Excel tự áp đúng ô Loại đơn vị của từng dòng.
+  TPL_COLS.forEach((c, i) => {
+    if (i === 0) return;
+    const dv = { allowBlank: true, showInputMessage: true, promptTitle: c.title.slice(0, 32), prompt: (c.prompt || '').slice(0, 255) };
+    if (c.kind === 'loai') Object.assign(dv, { type: 'list', formulae: ['DS_LoaiDonVi'] });
+    else if (c.kind === 'dept') Object.assign(dv, { type: 'list', formulae: [`INDIRECT("DS_"&$B${FIRST})`] });
+    else if (c.kind === 'cv') Object.assign(dv, { type: 'list', formulae: ['"x"'] });
+    else if (c.kind === 'story') Object.assign(dv, { type: 'textLength', operator: 'lessThanOrEqual', formulae: [2000], showErrorMessage: true, errorTitle: 'Quá dài', error: 'Tối đa 2.000 ký tự mỗi ô.' });
+    else Object.assign(dv, { type: 'custom', formulae: ['TRUE'] });
+    if (dv.type === 'list') Object.assign(dv, { showErrorMessage: true, errorStyle: 'stop', errorTitle: 'Giá trị không hợp lệ', error: 'Vui lòng chọn từ danh sách ▼' });
+    ws.dataValidations.add(`${colL(i + 1)}${FIRST}:${colL(i + 1)}${LAST}`, dv);
+  });
+
+  // Sheet HuongDan
+  hd.getColumn(1).width = 4; hd.getColumn(2).width = 120;
+  const lines = [
+    ['t', `HƯỚNG DẪN NỘP ĐỀ CỬ ĐẠI SỨ WIN BẰNG FILE EXCEL${tenQuy ? ' — ' + tenQuy : ''}`],
+    ['h', 'Các bước'],
+    ['p', `1. Điền ở sheet "DeCu", mỗi ứng viên 1 dòng (tối đa ${TPL_ROWS}). Không đổi tên/thứ tự các cột tiêu đề, không xóa dòng tiêu đề.`],
+    ['p', '2. Loại đơn vị và Miền/Vùng/Khối-Phòng: bấm vào ô rồi chọn từ danh sách ▼ — danh sách Miền/Vùng/Khối-Phòng tự đổi theo Loại đơn vị.'],
+    ['p', '3. Các cột Đơn vị, CBLĐ, Người viết đề cử: nếu để trống, hệ thống tự lấy theo dòng phía trên — chỉ cần điền ở dòng đầu khi các ứng viên cùng đơn vị.'],
+    ['p', '4. MSNV: hệ thống tự tra cứu Họ tên, Chức danh, Ngày vào Tập đoàn. Bối cảnh / Hành động / Kết quả: bắt buộc (xuống dòng trong ô bằng Alt+Enter).'],
+    ['p', '5. Giá trị cốt lõi: chọn "x" ở các cột phù hợp (có thể chọn nhiều).'],
+    ['p', '6. WinMart/MiniMart: Email người viết đề cử phải có trong danh sách được phép nộp đề cử (liên hệ PTVH nếu chưa có).'],
+    ['p', '7. Lưu file, vào trang nộp đề cử → "Nộp bằng file Excel" → Tải lên file đã điền → kiểm tra bảng xem trước → Gửi đề cử.'],
+    ['h', 'Ảnh chân dung'],
+    ['p', 'Không đưa ảnh vào Excel. Sau khi gửi, dùng link "Bổ sung ảnh / chỉnh sửa" của từng đề cử (hiện trên trang và trong email xác nhận).'],
+    ['p', '📸 Ưu tiên hình rõ mặt, tươi cười, mặc đồng phục/trang phục gọn gàng, đứng ở khu vực làm việc, background sạch sẽ.'],
+    ['h', 'Giá trị cốt lõi']
+  ].concat(Object.keys(CV_SHORT).map(k => ['p', `${k} — ${CV_SHORT[k]}`]))
+   .concat([['h', 'Liên hệ'], ['p', 'Mọi thắc mắc xin liên hệ Phòng Phát triển Văn hóa (PTVH) · ptvh@winmart.masangroup.com']]);
+  let r = 1;
+  lines.forEach(([kind, text]) => {
+    if (kind === 'h') r++;
+    const cell = hd.getCell(r, 2);
+    cell.value = text;
+    if (kind === 't') {
+      cell.font = font({ size: 15, bold: true, color: { argb: 'FFFFFFFF' } }); cell.fill = fill(C.navy);
+      hd.getCell(r, 1).fill = fill(C.navy); hd.getRow(r).height = 32; cell.alignment = { vertical: 'middle' };
+    } else if (kind === 'h') {
+      cell.font = font({ size: 11, bold: true, color: { argb: C.mid } });
+      cell.border = { bottom: { style: 'medium', color: { argb: C.gold } } };
+    } else {
+      cell.font = font({ size: 10.5 }); cell.alignment = { wrapText: true, vertical: 'top' };
+    }
+    r++;
+  });
+  return wb;
+}
+
 document.getElementById('btnDownloadTemplate').onclick = async () => {
   const btn = document.getElementById('btnDownloadTemplate');
   const original = btn.textContent;
   btn.disabled = true; btn.textContent = 'Đang tạo file...';
   try {
-    const [XLSX, depts] = await Promise.all([loadXlsxLib(), getAllDeptLists()]);
-    const wb = XLSX.utils.book_new();
-    const headers = XL_COLS.map(c => c.title).concat(CV_KEYS);
-    const example = ['SSC', (depts.SSC && depts.SSC[0]) || 'Commercial', 'Phòng ABC', 'Nguyễn Văn A', 'nguyenvana@winmart.masangroup.com',
-      'Trần Thị B', 'tranthib@winmart.masangroup.com', '1234567', '(Xóa dòng ví dụ này trước khi tải lên) Bối cảnh...', 'Hành động...', 'Kết quả...', 'x', '', 'x', '', ''];
-    const ws = XLSX.utils.aoa_to_sheet([headers, example]);
-    ws['!cols'] = XL_COLS.map(c => ({ wch: c.width })).concat(CV_KEYS.map(() => ({ wch: 15 })));
-    XLSX.utils.book_append_sheet(wb, ws, 'DeCu');
-
-    const maxLen = Math.max(...LOAI_DON_VI.map(l => (depts[l] || []).length), 1);
-    const dmRows = [LOAI_DON_VI.map(l => `${l} — Miền/Vùng/Khối-Phòng hợp lệ`)];
-    for (let i = 0; i < maxLen; i++) dmRows.push(LOAI_DON_VI.map(l => (depts[l] || [])[i] || ''));
-    const wsDm = XLSX.utils.aoa_to_sheet(dmRows);
-    wsDm['!cols'] = LOAI_DON_VI.map(() => ({ wch: 40 }));
-    XLSX.utils.book_append_sheet(wb, wsDm, 'DanhMuc');
-
-    const guide = [
-      ['HƯỚNG DẪN NỘP ĐỀ CỬ ĐẠI SỨ WIN BẰNG FILE EXCEL' + (activeQuarter ? ' — ' + activeQuarter.TenQuy : '')],
-      [''],
-      ['1. Điền ở sheet "DeCu", mỗi ứng viên 1 dòng, tối đa ' + XL_MAX_ROWS + ' ứng viên/file. Không đổi tên, thứ tự các cột tiêu đề. Xóa dòng ví dụ trước khi tải lên.'],
-      ['2. Loại đơn vị: WinMart / MiniMart / SSC. Miền/Vùng/Khối-Phòng: chép ĐÚNG tên trong sheet "DanhMuc".'],
-      ['3. 7 cột đầu (đơn vị, CBLĐ, người viết đề cử): nếu để trống, hệ thống tự lấy theo dòng phía trên — chỉ cần điền ở dòng đầu khi các ứng viên cùng đơn vị.'],
-      ['4. WinMart/MiniMart: Email người viết đề cử phải có trong danh sách được phép nộp đề cử (liên hệ PTVH nếu chưa có).'],
-      ['5. MSNV: hệ thống tự tra cứu Họ tên, Chức danh, Ngày vào Tập đoàn. Bối cảnh / Hành động / Kết quả: bắt buộc (xuống dòng trong ô bằng Alt+Enter).'],
-      ['6. Giá trị cốt lõi: đánh "x" vào cột tương ứng (có thể chọn nhiều).'],
-      ['7. Ảnh chân dung không đưa vào Excel — Ưu tiên hình rõ mặt, tươi cười, mặc đồng phục/trang phục gọn gàng, đứng ở khu vực làm việc, background sạch sẽ. Sau khi gửi, dùng link "Bổ sung ảnh / chỉnh sửa" của từng đề cử (hiện trên trang và gửi kèm email xác nhận) để tải ảnh lên.'],
-      [''],
-      ['GIÁ TRỊ CỐT LÕI'],
-      ...CV_KEYS.map(k => [k + ': ' + CV_DETAILS[k].join(' ')])
-    ];
-    const wsG = XLSX.utils.aoa_to_sheet(guide);
-    wsG['!cols'] = [{ wch: 140 }];
-    XLSX.utils.book_append_sheet(wb, wsG, 'HuongDan');
-    XLSX.writeFile(wb, 'Mau_De_Cu_Dai_Su_WIN.xlsx');
+    const [ExcelJS, depts] = await Promise.all([loadExcelJsLib(), getAllDeptLists()]);
+    const wb = buildTemplateWorkbook(ExcelJS, depts, activeQuarter ? activeQuarter.TenQuy : '');
+    const buf = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'Mau_De_Cu_Dai_Su_WIN.xlsx';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
   } catch (err) {
     setExcelMsg('⚠️ ' + esc(err.message), 'err');
   } finally {
