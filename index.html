@@ -239,7 +239,7 @@
         <ol class="excel-steps">
           <li>Tải <b>file mẫu</b>, điền mỗi ứng viên 1 dòng: thông tin đơn vị, CBLĐ, người viết đề cử, MSNV, Bối cảnh – Hành động – Kết quả và đánh <b>x</b> vào Giá trị cốt lõi. Các cột đơn vị/người viết để trống sẽ tự lấy theo dòng phía trên.</li>
           <li>Tải file đã điền lên — hệ thống tự kiểm tra từng dòng (MSNV, đơn vị, quyền nộp) và hiển thị bảng xem trước.</li>
-          <li>Bấm <b>Gửi đề cử</b> — không cần điền lại trên web. Ảnh chân dung có thể bổ sung sau qua link chỉnh sửa của từng đề cử.</li>
+          <li>Bấm <b>Gửi đề cử</b> — không cần điền lại trên web. Ảnh chân dung bổ sung sau qua link chỉnh sửa của từng đề cử (ưu tiên hình rõ mặt, tươi cười, mặc đồng phục/trang phục gọn gàng, đứng ở khu vực làm việc, background sạch sẽ).</li>
         </ol>
         <div class="excel-actions">
           <button type="button" class="btn-ghost" id="btnDownloadTemplate">⬇ Tải file mẫu (.xlsx)</button>
@@ -650,7 +650,8 @@ function candidateBlockHtml() {
       </div>
     </div>
     <label>Ảnh chân dung</label>
-    <div class="hint">Yêu cầu ảnh rõ nét, tươi vui, nhìn rõ mặt. Ảnh sẽ được hệ thống tự động nén xuống mức nhẹ, an toàn để nộp nhanh (vẫn đủ nét để in poster/bảng tin), giữ nguyên tỉ lệ.</div>
+    <div class="photo-tip" style="background:var(--warn-bg);color:var(--warn);border-radius:8px;padding:9px 12px;font-size:12.5px;line-height:1.55;margin:0 0 10px;">📸 <b>Lưu ý:</b> Ưu tiên hình rõ mặt, tươi cười, mặc đồng phục/trang phục gọn gàng, đứng ở khu vực làm việc, background sạch sẽ.</div>
+    <div class="hint">Ảnh sẽ được hệ thống tự động nén xuống mức nhẹ, an toàn để nộp nhanh (vẫn đủ nét để in poster/bảng tin), giữ nguyên tỉ lệ.</div>
     <input type="file" data-field="anhChanDung" accept="image/*">
     <img class="file-preview" data-field="preview">
     <div class="compress-note" data-field="compressNote"></div>
@@ -903,7 +904,7 @@ document.getElementById('btnDownloadTemplate').onclick = async () => {
       ['4. WinMart/MiniMart: Email người viết đề cử phải có trong danh sách được phép nộp đề cử (liên hệ PTVH nếu chưa có).'],
       ['5. MSNV: hệ thống tự tra cứu Họ tên, Chức danh, Ngày vào Tập đoàn. Bối cảnh / Hành động / Kết quả: bắt buộc (xuống dòng trong ô bằng Alt+Enter).'],
       ['6. Giá trị cốt lõi: đánh "x" vào cột tương ứng (có thể chọn nhiều).'],
-      ['7. Ảnh chân dung không đưa vào Excel — sau khi gửi, dùng link "Bổ sung ảnh / chỉnh sửa" của từng đề cử (hiện trên trang và gửi kèm email xác nhận) để tải ảnh lên.'],
+      ['7. Ảnh chân dung không đưa vào Excel — Ưu tiên hình rõ mặt, tươi cười, mặc đồng phục/trang phục gọn gàng, đứng ở khu vực làm việc, background sạch sẽ. Sau khi gửi, dùng link "Bổ sung ảnh / chỉnh sửa" của từng đề cử (hiện trên trang và gửi kèm email xác nhận) để tải ảnh lên.'],
       [''],
       ['GIÁ TRỊ CỐT LÕI'],
       ...CV_KEYS.map(k => [k + ': ' + CV_DETAILS[k].join(' ')])
