@@ -166,6 +166,29 @@
   .form-closed .fc-sub { font-size:14px; color:var(--tx); line-height:1.6; margin:0 auto; max-width:480px; }
   .form-closed .fc-next { display:inline-block; margin-top:14px; padding:8px 16px; border-radius:99px; background:var(--warn-bg); color:var(--warn); font-size:13px; font-weight:700; }
   .form-closed .fc-foot { font-size:12px; color:var(--muted); margin-top:14px; }
+  /* Chọn cách điền ứng viên: trực tiếp / nhập file Excel */
+  .mode-switch { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:0 0 16px; }
+  .mode-switch button { background:#fff; color:var(--navy); border:1.5px solid var(--br); padding:11px 10px; font-size:13.5px; border-radius:9px; }
+  .mode-switch button:hover:not(:disabled) { background:#F5F8FF; transform:none; box-shadow:none; }
+  .mode-switch button.active { background:var(--navy); color:#fff; border-color:var(--navy); }
+  .excel-panel { border:1.5px dashed var(--bm); border-radius:10px; padding:16px 18px; margin-bottom:16px; background:rgba(0,87,184,.04); }
+  .excel-steps { margin:0 0 14px; padding-left:20px; font-size:13px; line-height:1.7; color:var(--tx); }
+  .excel-actions { display:flex; gap:10px; flex-wrap:wrap; }
+  .excel-actions button, .excel-actions label.file-btn { width:auto; flex:1 1 200px; padding:11px 16px; font-size:13.5px; text-align:center; }
+  .excel-actions label.file-btn { display:block; margin:0; background:var(--bd); color:#fff; border-radius:9px; font-weight:700; cursor:pointer; text-transform:none; letter-spacing:normal; }
+  .excel-actions label.file-btn:hover { background:var(--bm); }
+  .excel-msg { font-size:13px; font-weight:600; margin-top:12px; line-height:1.55; }
+  .excel-msg.ok { color:var(--ok); } .excel-msg.err { color:var(--err); } .excel-msg.info { color:var(--bm); }
+  .excel-msg ul { margin:6px 0 0; padding-left:20px; font-weight:500; }
+  body.excel-mode #unitCard, body.excel-mode #formRestSections { display:none !important; }
+  .xl-table-wrap { overflow-x:auto; margin-top:14px; border:1px solid var(--br); border-radius:10px; background:#fff; }
+  .xl-table { width:100%; border-collapse:collapse; font-size:12.5px; }
+  .xl-table th { background:#F5F8FF; color:var(--muted); font-size:10.5px; text-transform:uppercase; letter-spacing:.3px; text-align:left; padding:8px 10px; white-space:nowrap; }
+  .xl-table td { padding:8px 10px; border-top:1px solid var(--br); vertical-align:top; }
+  .xl-table td .sub { color:var(--muted); font-size:11.5px; }
+  .xl-st { font-weight:700; font-size:12px; }
+  .xl-st.ok { color:var(--ok); } .xl-st.warn { color:var(--warn); } .xl-st.err { color:var(--err); } .xl-st.info { color:var(--bm); }
+  .xl-send { margin-top:14px; }
   .hidden { display:none !important; }
 </style>
 </head>
@@ -203,6 +226,28 @@
       </div>
       <div class="quota-body" id="quotaBody">
         <div class="quota-loading" id="quotaContent">Bấm để tải dữ liệu...</div>
+      </div>
+    </div>
+
+    <div class="card hidden" id="entryModeCard">
+      <h2>Cách nộp đề cử</h2>
+      <div class="mode-switch" id="modeSwitch">
+        <button type="button" class="active" data-mode="direct">✍️ Điền trực tiếp trên web</button>
+        <button type="button" data-mode="excel">📥 Nộp bằng file Excel</button>
+      </div>
+      <div class="excel-panel hidden" id="excelPanel">
+        <ol class="excel-steps">
+          <li>Tải <b>file mẫu</b>, điền mỗi ứng viên 1 dòng: thông tin đơn vị, CBLĐ, người viết đề cử, MSNV, Bối cảnh – Hành động – Kết quả và đánh <b>x</b> vào Giá trị cốt lõi. Các cột đơn vị/người viết để trống sẽ tự lấy theo dòng phía trên.</li>
+          <li>Tải file đã điền lên — hệ thống tự kiểm tra từng dòng (MSNV, đơn vị, quyền nộp) và hiển thị bảng xem trước.</li>
+          <li>Bấm <b>Gửi đề cử</b> — không cần điền lại trên web. Ảnh chân dung có thể bổ sung sau qua link chỉnh sửa của từng đề cử.</li>
+        </ol>
+        <div class="excel-actions">
+          <button type="button" class="btn-ghost" id="btnDownloadTemplate">⬇ Tải file mẫu (.xlsx)</button>
+          <label class="file-btn" for="excelFileInput">⬆ Tải lên file đã điền</label>
+          <input type="file" id="excelFileInput" accept=".xlsx,.xls" class="hidden">
+        </div>
+        <div class="excel-msg" id="excelMsg"></div>
+        <div id="excelPreview"></div>
       </div>
     </div>
 
@@ -265,6 +310,7 @@
       <div id="status"></div>
     </div>
   </form>
+  <div class="site-contact" style="text-align:center;font-size:12.5px;color:var(--muted);margin:22px auto 6px;max-width:720px;line-height:1.6;padding:0 12px;">Mọi thắc mắc xin liên hệ Phòng Phát triển Văn hóa (PTVH) · ✉️ <a href="mailto:ptvh@winmart.masangroup.com" style="color:var(--bm);font-weight:700;text-decoration:none;">ptvh@winmart.masangroup.com</a></div>
   <div style="text-align:center;font-size:10.5px;color:var(--muted);margin-top:18px;font-family:'Space Mono',monospace;">Phiên bản backend: <span id="backendVersion">đang kiểm tra...</span></div>
 </div>
 
@@ -406,12 +452,13 @@ function renderFormClosed(closed) {
       <div class="fc-title">Chưa đến thời hạn đề cử Quý tiếp theo</div>
       <div class="fc-sub">${sub}</div>
       ${next}
-      <div class="fc-foot">Anh/Chị vẫn có thể tra cứu tiến trình các đề cử đã nộp ở mục phía trên. Mọi thắc mắc xin liên hệ Phòng Phát triển Văn hóa (PTVH).</div>
+      <div class="fc-foot">Anh/Chị vẫn có thể tra cứu tiến trình các đề cử đã nộp ở mục phía trên. Mọi thắc mắc xin liên hệ Phòng Phát triển Văn hóa (PTVH).<br>Email: <a href="mailto:ptvh@winmart.masangroup.com" style="color:var(--bm);font-weight:700;text-decoration:none;">ptvh@winmart.masangroup.com</a></div>
     </div>`;
   document.getElementById('quotaToggle').classList.add('hidden');
   document.getElementById('quotaBody').classList.add('hidden');
   document.getElementById('unitCard').classList.add('hidden');
   document.getElementById('formRestSections').classList.add('hidden');
+  document.getElementById('entryModeCard').classList.add('hidden');
   document.getElementById('submitBtn').disabled = true;
 }
 
@@ -422,6 +469,7 @@ Api.getActiveQuarter().then(res => {
     el.className = 'quarter-info open';
     const hanNop = res.item.HanB1_DonViDeCu ? new Date(res.item.HanB1_DonViDeCu).toLocaleDateString('vi-VN') : null;
     el.innerHTML = `🟢 Đang nhận đề cử cho: ${esc(res.item.TenQuy)}` + (hanNop ? `<div class="quarter-deadline">⏰ Hạn gửi đề cử: <b>${hanNop}</b></div>` : '');
+    document.getElementById('entryModeCard').classList.remove('hidden');
     fetchQuotaData(); // tải trước, không chờ người dùng mở panel/chọn Loại đơn vị mới tải
   } else {
     renderFormClosed(res && res.closed);
@@ -756,6 +804,307 @@ candidatesContainer.addEventListener('change', async (e) => {
     note.textContent = `✓ Đã nén ảnh xuống còn ~${sizeKB}KB`;
   } catch (err) {
     note.textContent = '⚠️ Không đọc được ảnh này — vui lòng thử chọn ảnh khác (định dạng JPG/PNG).';
+  }
+});
+
+// ---------- Nộp đề cử bằng file Excel (không cần điền lại trên web) ----------
+// Đọc file ở trình duyệt (SheetJS, chỉ tải khi cần), kiểm tra từng dòng với CHÍNH các API đang dùng
+// cho form web (danh mục đơn vị, quyền nộp WinMart/MiniMart, tra cứu MSNV), rồi gửi TỪNG đề cử qua
+// đúng Api.submitNomination như form thường — nên server vẫn chặn đủ: form đóng/mở, quota, danh
+// sách được phép nộp, chống trùng (mỗi dòng giữ 1 clientKey cố định, bấm gửi lại không tạo trùng).
+const XLSX_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+const CV_KEYS = ['WIN PHỤNG SỰ', 'WIN SÁNG TẠO', 'WIN TỰ CHỦ', 'WIN KIÊN ĐỊNH', 'WIN KHÁT VỌNG'];
+const LOAI_DON_VI = ['WinMart', 'MiniMart', 'SSC'];
+const XL_MAX_ROWS = 30; // giới hạn mỗi file — gửi tuần tự, mỗi đề cử mất vài giây
+const XL_COLS = [
+  { key: 'loaiDonVi', title: 'Loại đơn vị', inherit: true, width: 12 },
+  { key: 'mienVungKhoi', title: 'Miền / Vùng / Khối-Phòng', inherit: true, width: 26 },
+  { key: 'tenDonVi', title: 'Khối/Bộ phận/Cơ sở', inherit: true, width: 24 },
+  { key: 'nguoiDeXuat', title: 'CBLĐ khối phòng', inherit: true, width: 22 },
+  { key: 'emailNguoiDeXuat', title: 'Email CBLĐ', inherit: true, width: 28 },
+  { key: 'nguoiVietDeCu', title: 'Người viết đề cử', inherit: true, width: 22 },
+  { key: 'emailNguoiVietDeCu', title: 'Email người viết đề cử', inherit: true, width: 28 },
+  { key: 'maNV', title: 'MSNV ứng viên', width: 14 },
+  { key: 'boiCanh', title: 'Bối cảnh', width: 45 },
+  { key: 'hanhDong', title: 'Hành động / đóng góp', width: 45 },
+  { key: 'ketQua', title: 'Kết quả nhận được', width: 45 }
+];
+let xlsxLoading = null;
+let xlRows = [];        // các dòng đã đọc + kết quả kiểm tra
+let xlSending = false;
+
+function loadXlsxLib() {
+  if (window.XLSX) return Promise.resolve(window.XLSX);
+  if (xlsxLoading) return xlsxLoading;
+  xlsxLoading = new Promise((resolve, reject) => {
+    const sc = document.createElement('script');
+    sc.src = XLSX_CDN;
+    sc.onload = () => resolve(window.XLSX);
+    sc.onerror = () => { xlsxLoading = null; reject(new Error('Không tải được thư viện đọc Excel — vui lòng kiểm tra kết nối mạng (có thể mạng công ty chặn cdnjs.cloudflare.com) rồi thử lại, hoặc chọn "Điền trực tiếp trên web".')); };
+    document.head.appendChild(sc);
+  });
+  return xlsxLoading;
+}
+
+function setExcelMsg(html, cls) {
+  const el = document.getElementById('excelMsg');
+  el.className = 'excel-msg ' + (cls || '');
+  el.innerHTML = html;
+}
+
+function setEntryMode(mode) {
+  if (xlSending) return;
+  document.querySelectorAll('#modeSwitch button').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+  document.body.classList.toggle('excel-mode', mode === 'excel');
+  document.getElementById('excelPanel').classList.toggle('hidden', mode !== 'excel');
+}
+document.querySelectorAll('#modeSwitch button').forEach(b => b.onclick = () => setEntryMode(b.dataset.mode));
+
+const normText = v => String(v == null ? '' : v).normalize('NFC').replace(/\s+/g, ' ').trim();
+const normKey = v => normText(v).toUpperCase();
+const isEmail = v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+
+let deptCache = null;
+async function getAllDeptLists() {
+  if (deptCache) return deptCache;
+  const lists = await Promise.all(LOAI_DON_VI.map(l => Api.getDeptList(l).then(r => (r && r.items) || []).catch(() => [])));
+  deptCache = {};
+  LOAI_DON_VI.forEach((l, i) => deptCache[l] = lists[i]);
+  return deptCache;
+}
+
+document.getElementById('btnDownloadTemplate').onclick = async () => {
+  const btn = document.getElementById('btnDownloadTemplate');
+  const original = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Đang tạo file...';
+  try {
+    const [XLSX, depts] = await Promise.all([loadXlsxLib(), getAllDeptLists()]);
+    const wb = XLSX.utils.book_new();
+    const headers = XL_COLS.map(c => c.title).concat(CV_KEYS);
+    const example = ['SSC', (depts.SSC && depts.SSC[0]) || 'Commercial', 'Phòng ABC', 'Nguyễn Văn A', 'nguyenvana@winmart.masangroup.com',
+      'Trần Thị B', 'tranthib@winmart.masangroup.com', '1234567', '(Xóa dòng ví dụ này trước khi tải lên) Bối cảnh...', 'Hành động...', 'Kết quả...', 'x', '', 'x', '', ''];
+    const ws = XLSX.utils.aoa_to_sheet([headers, example]);
+    ws['!cols'] = XL_COLS.map(c => ({ wch: c.width })).concat(CV_KEYS.map(() => ({ wch: 15 })));
+    XLSX.utils.book_append_sheet(wb, ws, 'DeCu');
+
+    const maxLen = Math.max(...LOAI_DON_VI.map(l => (depts[l] || []).length), 1);
+    const dmRows = [LOAI_DON_VI.map(l => `${l} — Miền/Vùng/Khối-Phòng hợp lệ`)];
+    for (let i = 0; i < maxLen; i++) dmRows.push(LOAI_DON_VI.map(l => (depts[l] || [])[i] || ''));
+    const wsDm = XLSX.utils.aoa_to_sheet(dmRows);
+    wsDm['!cols'] = LOAI_DON_VI.map(() => ({ wch: 40 }));
+    XLSX.utils.book_append_sheet(wb, wsDm, 'DanhMuc');
+
+    const guide = [
+      ['HƯỚNG DẪN NỘP ĐỀ CỬ ĐẠI SỨ WIN BẰNG FILE EXCEL' + (activeQuarter ? ' — ' + activeQuarter.TenQuy : '')],
+      [''],
+      ['1. Điền ở sheet "DeCu", mỗi ứng viên 1 dòng, tối đa ' + XL_MAX_ROWS + ' ứng viên/file. Không đổi tên, thứ tự các cột tiêu đề. Xóa dòng ví dụ trước khi tải lên.'],
+      ['2. Loại đơn vị: WinMart / MiniMart / SSC. Miền/Vùng/Khối-Phòng: chép ĐÚNG tên trong sheet "DanhMuc".'],
+      ['3. 7 cột đầu (đơn vị, CBLĐ, người viết đề cử): nếu để trống, hệ thống tự lấy theo dòng phía trên — chỉ cần điền ở dòng đầu khi các ứng viên cùng đơn vị.'],
+      ['4. WinMart/MiniMart: Email người viết đề cử phải có trong danh sách được phép nộp đề cử (liên hệ PTVH nếu chưa có).'],
+      ['5. MSNV: hệ thống tự tra cứu Họ tên, Chức danh, Ngày vào Tập đoàn. Bối cảnh / Hành động / Kết quả: bắt buộc (xuống dòng trong ô bằng Alt+Enter).'],
+      ['6. Giá trị cốt lõi: đánh "x" vào cột tương ứng (có thể chọn nhiều).'],
+      ['7. Ảnh chân dung không đưa vào Excel — sau khi gửi, dùng link "Bổ sung ảnh / chỉnh sửa" của từng đề cử (hiện trên trang và gửi kèm email xác nhận) để tải ảnh lên.'],
+      [''],
+      ['GIÁ TRỊ CỐT LÕI'],
+      ...CV_KEYS.map(k => [k + ': ' + CV_DETAILS[k].join(' ')])
+    ];
+    const wsG = XLSX.utils.aoa_to_sheet(guide);
+    wsG['!cols'] = [{ wch: 140 }];
+    XLSX.utils.book_append_sheet(wb, wsG, 'HuongDan');
+    XLSX.writeFile(wb, 'Mau_De_Cu_Dai_Su_WIN.xlsx');
+  } catch (err) {
+    setExcelMsg('⚠️ ' + esc(err.message), 'err');
+  } finally {
+    btn.disabled = false; btn.textContent = original;
+  }
+};
+
+// Đọc sheet -> danh sách dòng (đã kế thừa cột đơn vị từ dòng trên) + lỗi định dạng cơ bản.
+function parseNominationSheet(XLSX, wb) {
+  const sheetName = wb.SheetNames.find(n => normKey(n) === 'DECU') || wb.SheetNames[0];
+  const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1, defval: '', raw: false });
+  const hIdx = rows.findIndex(r => r.some(c => normKey(c).indexOf('MSNV') === 0));
+  if (hIdx === -1) throw new Error('Không tìm thấy dòng tiêu đề có cột "MSNV ứng viên" — vui lòng dùng đúng file mẫu.');
+  const headers = rows[hIdx].map(normKey);
+  const idx = {};
+  const missingCols = [];
+  XL_COLS.forEach(c => { idx[c.key] = headers.indexOf(normKey(c.title)); if (idx[c.key] === -1) missingCols.push(c.title); });
+  if (missingCols.length) throw new Error('File thiếu cột: ' + missingCols.join(', ') + ' — vui lòng tải lại file mẫu mới nhất.');
+  const cvIdx = CV_KEYS.map(k => ({ key: k, i: headers.indexOf(normKey(k)) }));
+
+  const out = [];
+  let prev = {};
+  rows.slice(hIdx + 1).forEach((r, k) => {
+    const cell = i => (i === -1 ? '' : String(r[i] == null ? '' : r[i]).trim());
+    const raw = {};
+    XL_COLS.forEach(c => raw[c.key] = cell(idx[c.key]));
+    const gtcl = cvIdx.filter(c => c.i !== -1 && cell(c.i) !== '').map(c => c.key);
+    if (XL_COLS.every(c => !raw[c.key]) && !gtcl.length) return; // dòng trống
+    if (/xóa dòng ví dụ/i.test(raw.boiCanh)) return;           // bỏ qua dòng ví dụ trong file mẫu
+    const row = { rowNo: hIdx + k + 2, gtcl, errors: [], warns: [] };
+    XL_COLS.forEach(c => { row[c.key] = (c.inherit && !raw[c.key]) ? (prev[c.key] || '') : raw[c.key]; });
+    row.maNV = row.maNV.replace(/\.0+$/, '');
+    XL_COLS.filter(c => c.inherit).forEach(c => prev[c.key] = row[c.key]);
+    const loai = LOAI_DON_VI.find(l => l.toUpperCase() === normKey(row.loaiDonVi));
+    if (!loai) row.errors.push(`Loại đơn vị "${row.loaiDonVi || '(trống)'}" không hợp lệ (WinMart/MiniMart/SSC)`);
+    else row.loaiDonVi = loai;
+    XL_COLS.filter(c => c.key !== 'loaiDonVi' && !row[c.key]).forEach(c => row.errors.push(`Thiếu ${c.title}`));
+    ['emailNguoiDeXuat', 'emailNguoiVietDeCu'].forEach(k => {
+      if (row[k] && !isEmail(row[k])) row.errors.push(`${XL_COLS.find(c => c.key === k).title} không đúng định dạng`);
+    });
+    if (!gtcl.length) row.warns.push('Chưa chọn Giá trị cốt lõi');
+    row.clientKey = makeClientKey(); // cố định cho dòng này — gửi lại không tạo trùng
+    out.push(row);
+  });
+  const seen = {};
+  out.forEach(r => { if (r.maNV) { if (seen[r.maNV]) r.errors.push(`MSNV trùng với dòng ${seen[r.maNV]}`); else seen[r.maNV] = r.rowNo; } });
+  return out;
+}
+
+// Kiểm tra với hệ thống: danh mục đơn vị, quyền nộp (WinMart/MiniMart), tra cứu MSNV.
+async function validateRowsWithServer(rows) {
+  const depts = await getAllDeptLists();
+  rows.forEach(r => {
+    if (!r.loaiDonVi || !LOAI_DON_VI.includes(r.loaiDonVi) || !r.mienVungKhoi) return;
+    const list = depts[r.loaiDonVi] || [];
+    const match = list.find(d => normKey(d) === normKey(r.mienVungKhoi));
+    if (match) r.mienVungKhoi = match;
+    else if (list.length) r.errors.push(`Miền/Vùng/Khối-Phòng "${r.mienVungKhoi}" không có trong danh mục ${r.loaiDonVi} (xem sheet DanhMuc)`);
+  });
+
+  const gateKeys = [...new Set(rows.filter(r => (r.loaiDonVi === 'WinMart' || r.loaiDonVi === 'MiniMart') && isEmail(r.emailNguoiVietDeCu))
+    .map(r => `${r.loaiDonVi}|${r.emailNguoiVietDeCu.toLowerCase()}`))];
+  const gate = {};
+  await Promise.all(gateKeys.map(async key => {
+    const [loai, email] = key.split('|');
+    try { gate[key] = await Api.checkSubmitterAllowed(email, loai); } catch (e) { gate[key] = { success: false, message: 'Không kiểm tra được quyền nộp' }; }
+  }));
+  rows.forEach(r => {
+    const g = gate[`${r.loaiDonVi}|${String(r.emailNguoiVietDeCu).toLowerCase()}`];
+    if (g && !(g.success && g.allowed)) r.errors.push(`Email người viết đề cử không được phép nộp cho ${r.loaiDonVi}`);
+  });
+
+  // Tra cứu MSNV theo từng nhóm 5 để không dồn quá nhiều request cùng lúc lên Apps Script.
+  const toLookup = rows.filter(r => r.maNV);
+  for (let i = 0; i < toLookup.length; i += 5) {
+    setExcelMsg(`Đang tra cứu MSNV (${Math.min(i + 5, toLookup.length)}/${toLookup.length})...`, 'info');
+    await Promise.all(toLookup.slice(i, i + 5).map(async r => {
+      try {
+        const res = await Api.lookupEmployee(r.maNV, activeQuarter ? activeQuarter.MaQuy : '');
+        if (res.success && res.item && res.item.hoTen) {
+          r.info = res.item;
+          const ex = res.item.existingNomination;
+          if (ex) r.warns.push(`Đã được ${ex.nguoiDeXuat || 'đơn vị khác'} đề cử trong Quý này (${ex.trangThai || '?'})`);
+        } else r.errors.push(`Không tìm thấy MSNV ${r.maNV}`);
+      } catch (e) { r.errors.push('Không tra cứu được MSNV (lỗi kết nối) — thử tải lại file'); }
+    }));
+  }
+}
+
+function rowStatusHtml(r) {
+  if (r.sent) return `<span class="xl-st ok">✓ Đã gửi</span>` + (r.editUrl ? `<div class="sub"><a href="${r.editUrl}" target="_blank" style="color:var(--bm);font-weight:600;">Bổ sung ảnh / chỉnh sửa</a></div>` : '');
+  if (r.sending) return `<span class="xl-st info">Đang gửi...</span>`;
+  if (r.sendError) return `<span class="xl-st err">✕ ${esc(r.sendError)}</span>`;
+  if (r.errors.length) return `<span class="xl-st err">✕ ${r.errors.map(esc).join('<br>✕ ')}</span>`;
+  if (r.warns.length) return `<span class="xl-st warn">⚠ ${r.warns.map(esc).join('<br>⚠ ')}</span>`;
+  return `<span class="xl-st ok">✓ Hợp lệ</span>`;
+}
+
+function renderExcelPreview() {
+  const box = document.getElementById('excelPreview');
+  if (!xlRows.length) { box.innerHTML = ''; return; }
+  const errCount = xlRows.filter(r => r.errors.length).length;
+  const pending = xlRows.filter(r => !r.sent).length;
+  const sentCount = xlRows.length - pending;
+  box.innerHTML = `
+    <div class="xl-table-wrap"><table class="xl-table">
+      <thead><tr><th>Dòng</th><th>Ứng viên</th><th>Đơn vị</th><th>Người viết đề cử</th><th>Giá trị cốt lõi</th><th>Kết quả kiểm tra</th></tr></thead>
+      <tbody>${xlRows.map(r => `<tr>
+        <td>${r.rowNo}</td>
+        <td><b>${esc((r.info && r.info.hoTen) || '—')}</b><div class="sub">MSNV ${esc(r.maNV || '—')}${r.info && r.info.chucDanh ? ' · ' + esc(r.info.chucDanh) : ''}</div></td>
+        <td>${esc(r.tenDonVi)}<div class="sub">${esc(r.loaiDonVi)} · ${esc(r.mienVungKhoi)}</div></td>
+        <td>${esc(r.nguoiVietDeCu)}<div class="sub">${esc(r.emailNguoiVietDeCu)}</div></td>
+        <td class="sub">${esc(r.gtcl.join(', ') || '—')}</td>
+        <td>${rowStatusHtml(r)}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>
+    ${errCount
+      ? `<div class="excel-msg err">⚠️ Có ${errCount} dòng lỗi — vui lòng sửa file rồi tải lên lại (chưa đề cử nào được gửi).</div>`
+      : pending
+        ? `<button type="button" class="xl-send" id="btnSendExcel">✅ Gửi ${pending} đề cử${sentCount ? ' còn lại' : ''}</button>`
+        : `<div class="excel-msg ok">🎉 Đã gửi thành công toàn bộ ${xlRows.length} đề cử. Email xác nhận (kèm link bổ sung ảnh/chỉnh sửa) đã được gửi tới người viết đề cử.</div>`}`;
+  const sendBtn = document.getElementById('btnSendExcel');
+  if (sendBtn) sendBtn.onclick = sendExcelRows;
+}
+
+async function sendExcelRows() {
+  if (xlSending) return;
+  const todo = xlRows.filter(r => !r.sent);
+  if (!todo.length) return;
+  if (!confirm(`Gửi ${todo.length} đề cử cho ${activeQuarter ? activeQuarter.TenQuy : 'Quý đang mở'}?`)) return;
+  xlSending = true;
+  const btn = document.getElementById('btnSendExcel');
+  btn.disabled = true;
+  let ok = 0, fail = 0;
+  for (let i = 0; i < todo.length; i++) {
+    const r = todo[i];
+    r.sending = true; r.sendError = '';
+    renderExcelPreview();
+    const statusBtn = document.getElementById('btnSendExcel') || document.createElement('button');
+    statusBtn.disabled = true;
+    const label = `Đang gửi ${i + 1}/${todo.length} — ${(r.info && r.info.hoTen) || r.maNV}`;
+    statusBtn.textContent = label;
+    const shared = {
+      quy: activeQuarter ? activeQuarter.MaQuy : '',
+      loaiDonVi: r.loaiDonVi, mienVungKhoi: r.mienVungKhoi, tenDonVi: r.tenDonVi,
+      nguoiDeXuat: r.nguoiDeXuat, emailNguoiDeXuat: r.emailNguoiDeXuat,
+      nguoiVietDeCu: r.nguoiVietDeCu, emailNguoiVietDeCu: r.emailNguoiVietDeCu
+    };
+    const candidate = {
+      hoTenUngVien: r.info.hoTen, maNV: r.maNV, chucDanh: r.info.chucDanh || '', ngayVaoTapDoan: r.info.ngayVaoTapDoan || '',
+      imageBase64: '', clientKey: r.clientKey,
+      cauChuyen: JSON.stringify({ boiCanh: r.boiCanh, hanhDong: r.hanhDong, ketQua: r.ketQua }),
+      giaTriCotLoi: r.gtcl.join(', ')
+    };
+    const res = await submitOneCandidate(shared, candidate, label, statusBtn);
+    r.sending = false;
+    if (res.ok) {
+      r.sent = true; ok++;
+      if (res.id && res.editToken) r.editUrl = `resubmit.html?id=${res.id}&token=${res.editToken}`;
+    } else { r.sendError = res.message || 'Gửi không thành công'; fail++; }
+  }
+  xlSending = false;
+  renderExcelPreview();
+  setExcelMsg(fail
+    ? `Đã gửi ${ok}/${todo.length} đề cử. ${fail} dòng chưa gửi được (xem cột Kết quả) — bấm gửi lại để thử tiếp các dòng còn lại, hệ thống không tạo trùng.`
+    : `✓ Đã gửi ${ok} đề cử. Có thể bổ sung ảnh chân dung qua link "Bổ sung ảnh / chỉnh sửa" ở từng dòng.`, fail ? 'err' : 'ok');
+  if (ok) { quotaFetchPromise = null; fetchQuotaData(); }
+}
+
+document.getElementById('excelFileInput').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  e.target.value = ''; // cho phép chọn lại cùng 1 file sau khi sửa
+  if (!file || xlSending) return;
+  if (xlRows.some(r => r.sent) && xlRows.some(r => !r.sent) &&
+      !confirm('Bảng hiện tại còn dòng chưa gửi. Tải file mới sẽ thay thế bảng này (các đề cử ĐÃ gửi vẫn được giữ trên hệ thống). Tiếp tục?')) return;
+  xlRows = [];
+  renderExcelPreview();
+  setExcelMsg('Đang đọc file...', 'info');
+  try {
+    const XLSX = await loadXlsxLib();
+    const wb = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+    const rows = parseNominationSheet(XLSX, wb);
+    if (!rows.length) return setExcelMsg('⚠️ File chưa có ứng viên nào — vui lòng điền ít nhất 1 dòng ở sheet "DeCu" (đã xóa dòng ví dụ).', 'err');
+    if (rows.length > XL_MAX_ROWS) return setExcelMsg(`⚠️ File có ${rows.length} ứng viên — mỗi file tối đa ${XL_MAX_ROWS}. Vui lòng tách thành nhiều file.`, 'err');
+    await validateRowsWithServer(rows);
+    xlRows = rows;
+    const errCount = rows.filter(r => r.errors.length).length;
+    setExcelMsg(errCount
+      ? `Đã đọc ${rows.length} dòng — ${errCount} dòng có lỗi cần sửa.`
+      : `✓ Đã đọc và kiểm tra ${rows.length} ứng viên. Kiểm tra lại bảng bên dưới rồi bấm Gửi.`, errCount ? 'err' : 'ok');
+    renderExcelPreview();
+  } catch (err) {
+    setExcelMsg('⚠️ Không đọc được file: ' + esc(err.message || 'định dạng không hợp lệ'), 'err');
   }
 });
 
